@@ -165,6 +165,7 @@ class CreateMemePageContent extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         height: 48,
                         alignment: Alignment.centerLeft,
+                        color: memeText.id == memeTextsState.currentSelectedText?.id ? AppColors.darkGrey16 : null,
                         child: Text(
                           memeText.text,
                           style: const TextStyle(
