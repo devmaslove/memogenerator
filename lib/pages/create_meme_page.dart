@@ -204,6 +204,7 @@ class _DraggableMemeTextState extends State<DraggableMemeText> {
           setState(() {
             left = calculateLeft(details);
             top = calculateTop(details);
+            bloc.selectMemText(widget.memeText.id);
           });
         },
         onTap: () => bloc.selectMemText(widget.memeText.id),
