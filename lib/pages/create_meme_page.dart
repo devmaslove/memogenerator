@@ -165,7 +165,10 @@ class CreateMemePageContent extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         height: 48,
                         alignment: Alignment.centerLeft,
-                        color: memeText.id == memeTextsState.currentSelectedText?.id ? AppColors.darkGrey16 : null,
+                        color: memeText.id ==
+                                memeTextsState.currentSelectedText?.id
+                            ? AppColors.darkGrey16
+                            : null,
                         child: Text(
                           memeText.text,
                           style: const TextStyle(
@@ -246,13 +249,18 @@ class DraggableMemeText extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<DraggableMemeText> createState() => _DraggableMemeTextState();
+  State<DraggableMemeText> createState() => _DraggableMemeTextState(
+        left: parentConstraints.maxWidth / 3,
+        top: parentConstraints.maxHeight / 2,
+      );
 }
 
 class _DraggableMemeTextState extends State<DraggableMemeText> {
   double top = 0;
   double left = 0;
   static const double _padding = 8;
+
+  _DraggableMemeTextState({required this.top, required this.left});
 
   @override
   Widget build(BuildContext context) {
