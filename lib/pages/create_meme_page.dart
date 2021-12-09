@@ -102,7 +102,7 @@ class _EditTextBarState extends State<EditTextBar> {
                 disabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: AppColors.darkGrey38),
                 ),
-                focusedBorder: UnderlineInputBorder(
+                focusedBorder: const UnderlineInputBorder(
                   borderSide: BorderSide(color: AppColors.fuchsia, width: 2),
                 ),
               ),
@@ -123,6 +123,7 @@ class CreateMemePageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
     return Column(
       children: [
         const Expanded(
@@ -137,12 +138,45 @@ class CreateMemePageContent extends StatelessWidget {
           flex: 1,
           child: Container(
             color: Colors.white,
-            child: ListView(
-              children: const [
-                SizedBox(height: 12),
-                AddNewMemeTextButton(),
-              ],
-            ),
+            child: StreamBuilder<MemesTextStateInfo>(
+                initialData: const MemesTextStateInfo([], null),
+                stream: bloc.observeMemesTextState(),
+                builder: (context, snapshot) {
+                  final memeTextsState = snapshot.hasData
+                      ? snapshot.data!
+                      : const MemesTextStateInfo([], null);
+                  return ListView.separated(
+                    itemCount: memeTextsState.currentTexts.length + 2,
+                    separatorBuilder: (BuildContext context, int index) {
+                      if (index == 0) return const SizedBox(height: 0);
+                      if (index == 1) return const SizedBox(height: 12);
+                      return Container(
+                        height: 1,
+                        margin: const EdgeInsets.only(left: 16),
+                        color: AppColors.darkGrey,
+                      );
+                    },
+                    itemBuilder: (BuildContext context, int index) {
+                      if (index == 0) return const SizedBox(height: 12);
+                      if (index == 1) return const AddNewMemeTextButton();
+                      MemeText memeText =
+                          memeTextsState.currentTexts[index - 2];
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        height: 48,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          memeText.text,
+                          style: const TextStyle(
+                            color: AppColors.darkGrey,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
           ),
         ),
       ],
