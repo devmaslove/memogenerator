@@ -249,10 +249,7 @@ class DraggableMemeText extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<DraggableMemeText> createState() => _DraggableMemeTextState(
-        left: parentConstraints.maxWidth / 3,
-        top: parentConstraints.maxHeight / 2,
-      );
+  State<DraggableMemeText> createState() => _DraggableMemeTextState();
 }
 
 class _DraggableMemeTextState extends State<DraggableMemeText> {
@@ -260,7 +257,12 @@ class _DraggableMemeTextState extends State<DraggableMemeText> {
   double left = 0;
   static const double _padding = 8;
 
-  _DraggableMemeTextState({required this.top, required this.left});
+  @override
+  void initState() {
+    super.initState();
+    top = widget.parentConstraints.maxHeight / 2;
+    left = widget.parentConstraints.maxWidth / 3;
+  }
 
   @override
   Widget build(BuildContext context) {
