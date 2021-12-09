@@ -15,8 +15,8 @@ class CreateMemeBloc {
 
   void changeMemText(final String id, final String text) {
     final copiedList = [...memeTextsSubject.value];
-    int index = copiedList.indexWhere((memeText) => memeText.id==id);
-    if (index!=-1) {
+    int index = copiedList.indexWhere((memeText) => memeText.id == id);
+    if (index != -1) {
       copiedList.removeAt(index);
       copiedList.insert(index, MemeText(id: id, text: text));
       memeTextsSubject.add(copiedList);
@@ -38,6 +38,14 @@ class CreateMemeBloc {
 
   Stream<MemeText?> observeSelectedMemText() =>
       selectedMemeTextSubject.distinct();
+
+  Stream<MemesTextStateInfo> observeMemesTextState() {
+    return Rx.combineLatest2<List<MemeText>, MemeText?, MemesTextStateInfo>(
+      observeMemeTexts(),
+      observeSelectedMemText(),
+      (memTexts, selectedMem) => MemesTextStateInfo(memTexts, selectedMem),
+    );
+  }
 
   void dispose() {
     memeTextsSubject.close();
@@ -71,4 +79,27 @@ class MemeText {
   String toString() {
     return 'MemeText{id: $id, text: $text}';
   }
+}
+
+class MemesTextStateInfo {
+  final List<MemeText> currentTexts;
+  final MemeText? currentSelectedText;
+
+  const MemesTextStateInfo(this.currentTexts, this.currentSelectedText);
+
+  @override
+  String toString() {
+    return 'MemesTextStateInfo{currentTexts: $currentTexts, currentSelectedText: $currentSelectedText}';
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MemesTextStateInfo &&
+          runtimeType == other.runtimeType &&
+          listEquals(currentTexts, other.currentTexts) &&
+          currentSelectedText == other.currentSelectedText;
+
+  @override
+  int get hashCode => currentTexts.hashCode ^ currentSelectedText.hashCode;
 }
