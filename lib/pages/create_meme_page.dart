@@ -81,7 +81,7 @@ class _EditTextBarState extends State<EditTextBar> {
               cursorColor: AppColors.fuchsia,
               controller: controller,
               onChanged: (text) {
-                if (selectedMemeText != null) {
+                if (isHaveSelectedText) {
                   bloc.changeMemText(selectedMemeText.id, text);
                 }
               },
@@ -123,7 +123,6 @@ class CreateMemePageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
     return Column(
       children: [
         const Expanded(
@@ -134,56 +133,91 @@ class CreateMemePageContent extends StatelessWidget {
           color: AppColors.darkGrey,
           height: 1,
         ),
-        Expanded(
+        const Expanded(
           flex: 1,
-          child: Container(
-            color: Colors.white,
-            child: StreamBuilder<MemesTextStateInfo>(
-                initialData: const MemesTextStateInfo([], null),
-                stream: bloc.observeMemesTextState(),
-                builder: (context, snapshot) {
-                  final memeTextsState = snapshot.hasData
-                      ? snapshot.data!
-                      : const MemesTextStateInfo([], null);
-                  return ListView.separated(
-                    itemCount: memeTextsState.currentTexts.length + 2,
-                    separatorBuilder: (BuildContext context, int index) {
-                      if (index == 0) return const SizedBox(height: 0);
-                      if (index == 1) return const SizedBox(height: 12);
-                      return Container(
-                        height: 1,
-                        margin: const EdgeInsets.only(left: 16),
-                        color: AppColors.darkGrey,
-                      );
-                    },
-                    itemBuilder: (BuildContext context, int index) {
-                      if (index == 0) return const SizedBox(height: 12);
-                      if (index == 1) return const AddNewMemeTextButton();
-                      MemeText memeText =
-                          memeTextsState.currentTexts[index - 2];
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        height: 48,
-                        alignment: Alignment.centerLeft,
-                        color: memeText.id ==
-                                memeTextsState.currentSelectedText?.id
-                            ? AppColors.darkGrey16
-                            : null,
-                        child: Text(
-                          memeText.text,
-                          style: const TextStyle(
-                            color: AppColors.darkGrey,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }),
-          ),
+          child: BottomList(),
         ),
       ],
+    );
+  }
+}
+
+class BottomList extends StatelessWidget {
+  const BottomList({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    return Container(
+      color: Colors.white,
+      child: StreamBuilder<List<MemTextWithSelection>>(
+          initialData: const <MemTextWithSelection>[],
+          stream: bloc.observeMemeTextsWithSelection(),
+          builder: (context, snapshot) {
+            final items = snapshot.hasData
+                ? snapshot.data!
+                : const <MemTextWithSelection>[];
+            return ListView.separated(
+                itemCount: items.length + 1,
+                separatorBuilder: (BuildContext context, int index) {
+                  if (index == 0) return const SizedBox.shrink();
+                  return const BottomSeparator();
+                },
+                itemBuilder: (BuildContext context, int index) {
+                  if (index == 0) {
+                    return const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: AddNewMemeTextButton(),
+                    );
+                  }
+                  MemTextWithSelection item = items[index - 1];
+                  return BottomMemeText(item: item);
+                });
+          }),
+    );
+  }
+}
+
+class BottomSeparator extends StatelessWidget {
+  const BottomSeparator({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.only(left: 16),
+      color: AppColors.darkGrey,
+    );
+  }
+}
+
+class BottomMemeText extends StatelessWidget {
+  const BottomMemeText({
+    Key? key,
+    required this.item,
+  }) : super(key: key);
+
+  final MemTextWithSelection item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 48,
+      alignment: Alignment.centerLeft,
+      color: item.selected ? AppColors.darkGrey16 : null,
+      child: Text(
+        item.memeText.text,
+        style: const TextStyle(
+          color: AppColors.darkGrey,
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
     );
   }
 }
@@ -203,26 +237,22 @@ class MemeCanvasWidget extends StatelessWidget {
       child: AspectRatio(
         aspectRatio: 1.0,
         child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
           onTap: () => bloc.deselectMemText(),
           child: Container(
             color: Colors.white,
-            child: StreamBuilder<MemesTextStateInfo>(
-              initialData: const MemesTextStateInfo([], null),
-              stream: bloc.observeMemesTextState(),
+            child: StreamBuilder<List<MemeText>>(
+              initialData: const [],
+              stream: bloc.observeMemeTexts(),
               builder: (context, snapshot) {
-                final memeTextsState = snapshot.hasData
-                    ? snapshot.data!
-                    : const MemesTextStateInfo([], null);
+                final memeTexts =
+                    snapshot.hasData ? snapshot.data! : const <MemeText>[];
                 return LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints constraints) {
                     return Stack(
-                        children: memeTextsState.currentTexts.map((memeText) {
+                        children: memeTexts.map((memeText) {
                       return DraggableMemeText(
                         memeText: memeText,
                         parentConstraints: constraints,
-                        isSelected: memeText.id ==
-                            memeTextsState.currentSelectedText?.id,
                       );
                     }).toList());
                   },
@@ -239,13 +269,11 @@ class MemeCanvasWidget extends StatelessWidget {
 class DraggableMemeText extends StatefulWidget {
   final MemeText memeText;
   final BoxConstraints parentConstraints;
-  final bool isSelected;
 
   const DraggableMemeText({
     Key? key,
     required this.memeText,
     required this.parentConstraints,
-    required this.isSelected,
   }) : super(key: key);
 
   @override
@@ -253,8 +281,8 @@ class DraggableMemeText extends StatefulWidget {
 }
 
 class _DraggableMemeTextState extends State<DraggableMemeText> {
-  double top = 0;
-  double left = 0;
+  late double top;
+  late double left;
   static const double _padding = 8;
 
   @override
@@ -273,35 +301,24 @@ class _DraggableMemeTextState extends State<DraggableMemeText> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onPanUpdate: (details) {
+          bloc.selectMemText(widget.memeText.id);
           setState(() {
             left = calculateLeft(details);
             top = calculateTop(details);
-            bloc.selectMemText(widget.memeText.id);
           });
         },
         onTap: () => bloc.selectMemText(widget.memeText.id),
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: widget.parentConstraints.maxWidth,
-            maxHeight: widget.parentConstraints.maxHeight,
-          ),
-          padding: const EdgeInsets.all(_padding),
-          decoration: widget.isSelected
-              ? BoxDecoration(
-                  color: AppColors.darkGrey16,
-                  border: Border.all(color: AppColors.fuchsia),
-                )
-              : null,
-          child: Text(
-            widget.memeText.text,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 24,
-              color: Colors.black,
-              height: 1.0,
-            ),
-          ),
-        ),
+        child: StreamBuilder<MemeText?>(
+            stream: bloc.observeSelectedMemText(),
+            builder: (context, snapshot) {
+              final selected = widget.memeText.id == snapshot.data?.id;
+              return MemeTextOnCanvas(
+                memeText: widget.memeText,
+                parentConstraints: widget.parentConstraints,
+                padding: _padding,
+                selected: selected,
+              );
+            }),
       ),
     );
   }
@@ -322,6 +339,46 @@ class _DraggableMemeTextState extends State<DraggableMemeText> {
       return widget.parentConstraints.maxWidth - _padding * 2 - 24;
     }
     return rawLeft;
+  }
+}
+
+class MemeTextOnCanvas extends StatelessWidget {
+  const MemeTextOnCanvas({
+    Key? key,
+    required this.memeText,
+    required this.parentConstraints,
+    required this.padding,
+    required this.selected,
+  })  : super(key: key);
+
+  final MemeText memeText;
+  final BoxConstraints parentConstraints;
+  final double padding;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: parentConstraints.maxWidth,
+        maxHeight: parentConstraints.maxHeight,
+      ),
+      padding: EdgeInsets.all(padding),
+      decoration: BoxDecoration(
+        color: selected ? AppColors.darkGrey16 : null,
+        border: Border.all(
+            color: selected ? AppColors.fuchsia : Colors.transparent),
+      ),
+      child: Text(
+        memeText.text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 24,
+          color: Colors.black,
+          height: 1.0,
+        ),
+      ),
+    );
   }
 }
 

@@ -39,11 +39,19 @@ class CreateMemeBloc {
   Stream<MemeText?> observeSelectedMemText() =>
       selectedMemeTextSubject.distinct();
 
-  Stream<MemesTextStateInfo> observeMemesTextState() {
-    return Rx.combineLatest2<List<MemeText>, MemeText?, MemesTextStateInfo>(
+  Stream<List<MemTextWithSelection>> observeMemeTextsWithSelection() {
+    return Rx.combineLatest2<List<MemeText>, MemeText?,
+        List<MemTextWithSelection>>(
       observeMemeTexts(),
       observeSelectedMemText(),
-      (memTexts, selectedMem) => MemesTextStateInfo(memTexts, selectedMem),
+      (memTexts, selectedMem) => memTexts
+          .map(
+            (memeText) => MemTextWithSelection(
+              memeText: memeText,
+              selected: memeText.id == selectedMem?.id,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -81,25 +89,28 @@ class MemeText {
   }
 }
 
-class MemesTextStateInfo {
-  final List<MemeText> currentTexts;
-  final MemeText? currentSelectedText;
+class MemTextWithSelection {
+  final MemeText memeText;
+  final bool selected;
 
-  const MemesTextStateInfo(this.currentTexts, this.currentSelectedText);
-
-  @override
-  String toString() {
-    return 'MemesTextStateInfo{currentTexts: $currentTexts, currentSelectedText: $currentSelectedText}';
-  }
+  MemTextWithSelection({
+    required this.memeText,
+    required this.selected,
+  });
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is MemesTextStateInfo &&
+      other is MemTextWithSelection &&
           runtimeType == other.runtimeType &&
-          listEquals(currentTexts, other.currentTexts) &&
-          currentSelectedText == other.currentSelectedText;
+          memeText == other.memeText &&
+          selected == other.selected;
 
   @override
-  int get hashCode => currentTexts.hashCode ^ currentSelectedText.hashCode;
+  int get hashCode => memeText.hashCode ^ selected.hashCode;
+
+  @override
+  String toString() {
+    return 'MemTextWithSelection{memeText: $memeText, selected: $selected}';
+  }
 }
