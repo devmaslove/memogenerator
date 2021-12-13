@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:memogenerator/blocs/create_meme_bloc.dart';
+import 'package:memogenerator/presentation/create_meme/create_meme_bloc.dart';
+import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
+import 'package:memogenerator/presentation/create_meme/models/meme_text_with_selection.dart';
 import 'package:memogenerator/resources/app_colors.dart';
 import 'package:provider/provider.dart';
 
@@ -152,13 +154,13 @@ class BottomList extends StatelessWidget {
     final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
     return Container(
       color: Colors.white,
-      child: StreamBuilder<List<MemTextWithSelection>>(
-          initialData: const <MemTextWithSelection>[],
+      child: StreamBuilder<List<MemeTextWithSelection>>(
+          initialData: const <MemeTextWithSelection>[],
           stream: bloc.observeMemeTextsWithSelection(),
           builder: (context, snapshot) {
             final items = snapshot.hasData
                 ? snapshot.data!
-                : const <MemTextWithSelection>[];
+                : const <MemeTextWithSelection>[];
             return ListView.separated(
                 itemCount: items.length + 1,
                 separatorBuilder: (BuildContext context, int index) {
@@ -172,7 +174,7 @@ class BottomList extends StatelessWidget {
                       child: AddNewMemeTextButton(),
                     );
                   }
-                  MemTextWithSelection item = items[index - 1];
+                  MemeTextWithSelection item = items[index - 1];
                   return BottomMemeText(item: item);
                 });
           }),
@@ -201,7 +203,7 @@ class BottomMemeText extends StatelessWidget {
     required this.item,
   }) : super(key: key);
 
-  final MemTextWithSelection item;
+  final MemeTextWithSelection item;
 
   @override
   Widget build(BuildContext context) {

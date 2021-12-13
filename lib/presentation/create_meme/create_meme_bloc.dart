@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
+import 'package:memogenerator/presentation/create_meme/models/meme_text_with_selection.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:uuid/uuid.dart';
 import 'package:collection/collection.dart';
 
 class CreateMemeBloc {
@@ -39,14 +40,14 @@ class CreateMemeBloc {
   Stream<MemeText?> observeSelectedMemText() =>
       selectedMemeTextSubject.distinct();
 
-  Stream<List<MemTextWithSelection>> observeMemeTextsWithSelection() {
+  Stream<List<MemeTextWithSelection>> observeMemeTextsWithSelection() {
     return Rx.combineLatest2<List<MemeText>, MemeText?,
-        List<MemTextWithSelection>>(
+        List<MemeTextWithSelection>>(
       observeMemeTexts(),
       observeSelectedMemText(),
       (memTexts, selectedMem) => memTexts
           .map(
-            (memeText) => MemTextWithSelection(
+            (memeText) => MemeTextWithSelection(
               memeText: memeText,
               selected: memeText.id == selectedMem?.id,
             ),
@@ -58,59 +59,5 @@ class CreateMemeBloc {
   void dispose() {
     memeTextsSubject.close();
     selectedMemeTextSubject.close();
-  }
-}
-
-class MemeText {
-  final String id;
-  final String text;
-
-  MemeText({
-    required this.id,
-    required this.text,
-  });
-
-  factory MemeText.create() => MemeText(id: Uuid().v4(), text: "");
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is MemeText &&
-          runtimeType == other.runtimeType &&
-          id == other.id &&
-          text == other.text;
-
-  @override
-  int get hashCode => id.hashCode ^ text.hashCode;
-
-  @override
-  String toString() {
-    return 'MemeText{id: $id, text: $text}';
-  }
-}
-
-class MemTextWithSelection {
-  final MemeText memeText;
-  final bool selected;
-
-  MemTextWithSelection({
-    required this.memeText,
-    required this.selected,
-  });
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is MemTextWithSelection &&
-          runtimeType == other.runtimeType &&
-          memeText == other.memeText &&
-          selected == other.selected;
-
-  @override
-  int get hashCode => memeText.hashCode ^ selected.hashCode;
-
-  @override
-  String toString() {
-    return 'MemTextWithSelection{memeText: $memeText, selected: $selected}';
   }
 }
