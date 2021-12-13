@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:memogenerator/data/models/meme.dart';
 import 'package:memogenerator/presentation/main/main_bloc.dart';
 import 'package:memogenerator/presentation/create_meme/create_meme_page.dart';
 import 'package:memogenerator/resources/app_colors.dart';
@@ -46,7 +47,7 @@ class _MainPageState extends State<MainPage> {
           icon: Icon(Icons.add, color: Colors.white),
         ),
         backgroundColor: Colors.white,
-        body: SafeArea(
+        body: const SafeArea(
           child: MainPageContent(),
         ),
       ),
@@ -65,8 +66,31 @@ class MainPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(),
-    );
+    final bloc = Provider.of<MainBloc>(context, listen: false);
+    return StreamBuilder<List<Meme>>(
+        stream: bloc.observeMemes(),
+        initialData: const <Meme>[],
+        builder: (context, snapshot) {
+          final items = snapshot.hasData ? snapshot.data! : const <Meme>[];
+          return ListView(
+            children: items.map((item) {
+              return GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CreateMemePage(id: item.id),
+                  ),
+                ),
+                child: Container(
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    item.id,
+                  ),
+                ),
+              );
+            }).toList(),
+          );
+        });
   }
 }
