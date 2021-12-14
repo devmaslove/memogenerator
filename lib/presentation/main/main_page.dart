@@ -37,11 +37,17 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => CreateMemePage(),
-            ),
-          ),
+          onPressed: () async {
+            final selectedMemePath = await bloc.selectMeme();
+            if (selectedMemePath == null) return;
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => CreateMemePage(
+                  selectedMemePath: selectedMemePath,
+                ),
+              ),
+            );
+          },
           backgroundColor: AppColors.fuchsia,
           label: Text("Создать".toUpperCase()),
           icon: Icon(Icons.add, color: Colors.white),
