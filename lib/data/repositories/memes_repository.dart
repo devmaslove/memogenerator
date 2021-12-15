@@ -18,7 +18,12 @@ class MemesRepository {
 
   Future<bool> addToMemes(final Meme meme) async {
     final memes = await getMemes();
-    memes.add(meme);
+    int pos = memes.indexWhere((element) => element.id == meme.id);
+    if (pos != -1) {
+      memes[pos] = meme;
+    } else {
+      memes.add(meme);
+    }
     return _setMemes(memes);
   }
 
