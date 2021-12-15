@@ -13,7 +13,7 @@ class Meme extends Equatable {
   Meme({
     required this.id,
     required this.texts,
-    required this.memePath,
+    this.memePath,
   });
 
   factory Meme.fromJson(final Map<String, dynamic> json) =>
