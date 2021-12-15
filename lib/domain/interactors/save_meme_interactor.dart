@@ -21,16 +21,54 @@ class SaveMemeInteractor {
     if (imagePath == null) {
       final meme = Meme(id: id, texts: textWithPositions);
       return MemesRepository.getInstance().addToMemes(meme);
-    }
-    else {
+    } else {
+      // создаем директорию с мемами
       final docsPath = await getApplicationDocumentsDirectory();
-      final memePath = "${docsPath.absolute.path}${Platform.pathSeparator}memes";
+      final memePath =
+          "${docsPath.absolute.path}${Platform.pathSeparator}memes";
       await Directory(memePath).create(recursive: true);
-      final imageName = imagePath.split(Platform.pathSeparator).last;
-      final fullImageName = "$memePath${Platform.pathSeparator}$imageName";
-      final tempFile = File(imagePath);
-      await tempFile.copy(fullImageName);
-      final meme = Meme(id: id, texts: textWithPositions, memePath: fullImageName);
+      // получаем имя файла в нашей дирректории
+      String imageName = imagePath.split(Platform.pathSeparator).last;
+      final imageExt = imageName.split(".").last;
+      String imageFileName =
+          imageName.substring(0, imageName.length - imageExt.length - 1);
+      int imageFileNum = 0;
+      if (imageFileName.contains(RegExp(r"_\d+$"))) {
+        final number = imageFileName.split("_").last;
+        imageFileName = imageFileName.substring(
+            0, imageFileName.length - number.length - 1);
+        imageFileNum = int.tryParse(number) ?? 0;
+      }
+      imageName = imagePath.split(Platform.pathSeparator).last;
+      final imageFile = File(imagePath);
+      int imageLength = await imageFile.length();
+      String fullImageName;
+      // проверяем есть ли уже такой
+      bool needSave = false;
+      do {
+        fullImageName = "$memePath${Platform.pathSeparator}$imageName";
+        final oldFile = File(fullImageName);
+        bool exists = await oldFile.exists();
+        if (!exists) {
+          needSave = true;
+          break;
+        }
+        int oldLength = await oldFile.length();
+        if (oldLength == imageLength) break;
+        // меняем имя и заного проверяем
+        imageFileNum++;
+        imageName = "${imageFileName}_$imageFileNum.$imageExt";
+      } while (true);
+      if (needSave) {
+        print("COPY FILE $imagePath TO $fullImageName");
+        final tempFile = File(imagePath);
+        await tempFile.copy(fullImageName);
+      }
+      final meme = Meme(
+        id: id,
+        texts: textWithPositions,
+        memePath: fullImageName,
+      );
       return MemesRepository.getInstance().addToMemes(meme);
     }
   }
