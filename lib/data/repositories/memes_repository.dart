@@ -20,8 +20,10 @@ class MemesRepository {
     final memes = await getMemes();
     int pos = memes.indexWhere((element) => element.id == meme.id);
     if (pos != -1) {
+      print("addToMemes: FIND MEME - replace")
       memes[pos] = meme;
     } else {
+      print("addToMemes: GOT NEW MEME - add to end")
       memes.add(meme);
     }
     return _setMemes(memes);
