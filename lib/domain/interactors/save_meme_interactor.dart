@@ -40,6 +40,7 @@ class SaveMemeInteractor {
         imageFileNum = int.tryParse(number) ?? 0;
       }
       imageName = imagePath.split(Platform.pathSeparator).last;
+      print("PARTS OF FILE NAME $imageName IS $imageFileName _ $imageFileNum . $imageExt");
       final imageFile = File(imagePath);
       int imageLength = await imageFile.length();
       String fullImageName;
@@ -63,6 +64,8 @@ class SaveMemeInteractor {
         print("COPY FILE $imagePath TO $fullImageName");
         final tempFile = File(imagePath);
         await tempFile.copy(fullImageName);
+      } else {
+        print("NOT COPY SAME FILE $imagePath VS $fullImageName");
       }
       final meme = Meme(
         id: id,
