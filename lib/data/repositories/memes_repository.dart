@@ -16,15 +16,15 @@ class MemesRepository {
 
   MemesRepository._internal(this.spData);
 
-  Future<bool> addToMemes(final Meme meme) async {
+  Future<bool> addToMemes(final Meme newMeme) async {
     final memes = await getMemes();
-    int pos = memes.indexWhere((element) => element.id == meme.id);
-    if (pos != -1) {
-      print("addToMemes: FIND MEME - replace");
-      memes[pos] = meme;
+    final memeIndex = memes.indexWhere((meme) => meme.id == newMeme.id);
+    if (memeIndex != -1) {
+      memes.removeAt(memeIndex);
+      memes.insert(memeIndex, newMeme);
+      // memes[memeIndex] = newMeme;
     } else {
-      print("addToMemes: GOT NEW MEME - add to end");
-      memes.add(meme);
+      memes.add(newMeme);
     }
     return _setMemes(memes);
   }
