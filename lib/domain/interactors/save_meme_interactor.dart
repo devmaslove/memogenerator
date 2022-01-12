@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:collection/collection.dart';
 
 class SaveMemeInteractor {
+  static const memesPathName = "memes";
   static SaveMemeInteractor? _instance;
 
   factory SaveMemeInteractor.getInstance() =>
@@ -17,7 +18,7 @@ class SaveMemeInteractor {
   Future<String> _createNewFile(final String imagePath) async {
     // создаем директорию с мемами
     final docsPath = await getApplicationDocumentsDirectory();
-    final memePath = "${docsPath.absolute.path}${Platform.pathSeparator}memes";
+    final memePath = "${docsPath.absolute.path}${Platform.pathSeparator}$memesPathName";
     final memesDirectory = Directory(memePath);
     await memesDirectory.create(recursive: true);
     final currentFiles = memesDirectory.listSync();
@@ -105,7 +106,7 @@ class SaveMemeInteractor {
   Future<String> _createNewFile2(final String imagePath) async {
     // создаем директорию с мемами
     final docsPath = await getApplicationDocumentsDirectory();
-    final memePath = "${docsPath.absolute.path}${Platform.pathSeparator}memes";
+    final memePath = "${docsPath.absolute.path}${Platform.pathSeparator}$memesPathName";
     await Directory(memePath).create(recursive: true);
     // получаем имя файла в нашей дирректории
     String imageName = _getFileNameByPath(imagePath);
