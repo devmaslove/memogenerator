@@ -78,6 +78,33 @@ class MainPageContent extends StatelessWidget {
         initialData: const <Meme>[],
         builder: (context, snapshot) {
           final items = snapshot.hasData ? snapshot.data! : const <Meme>[];
+          return GridView.extent(
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            maxCrossAxisExtent: 180,
+            children: items.map((item) {
+              return GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CreateMemePage(id: item.id),
+                  ),
+                ),
+                child: Container(
+                  alignment: Alignment.centerLeft,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: AppColors.darkGrey,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    item.id,
+                  ),
+                ),
+              );
+            }).toList(),
+          );
           return ListView(
             children: items.map((item) {
               return GestureDetector(

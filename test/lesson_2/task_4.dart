@@ -9,6 +9,7 @@ import 'package:memogenerator/data/repositories/memes_repository.dart';
 import 'package:memogenerator/domain/interactors/save_meme_interactor.dart';
 import 'package:memogenerator/presentation/create_meme/create_meme_page.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:screenshot/screenshot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -79,6 +80,7 @@ void runTestLesson2Task4() {
       print("Сохраняем мем через SaveMemeInteractor");
       saveMemeInteractor.saveMeme(
         id: firstId,
+        screenshotController: ScreenshotController(),
         textWithPositions: firstTextWithPositions,
         imagePath: firstImagePath,
       );
@@ -105,6 +107,7 @@ void runTestLesson2Task4() {
       print("Сохраняем еще один мем через SaveMemeInteractor");
       saveMemeInteractor.saveMeme(
         id: secondId,
+        screenshotController: ScreenshotController(),
         textWithPositions: secondTextWithPositions,
         imagePath: secondImagePath,
       );

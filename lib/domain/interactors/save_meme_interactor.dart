@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:memogenerator/data/models/meme.dart';
 import 'package:memogenerator/data/models/text_with_position.dart';
 import 'package:memogenerator/data/repositories/memes_repository.dart';
+import 'package:memogenerator/domain/interactors/screenshot_interactor.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:collection/collection.dart';
+import 'package:screenshot/screenshot.dart';
 
 class SaveMemeInteractor {
   static const memesPathName = "memes";
@@ -18,7 +20,8 @@ class SaveMemeInteractor {
   Future<String> _createNewFile(final String imagePath) async {
     // создаем директорию с мемами
     final docsPath = await getApplicationDocumentsDirectory();
-    final memePath = "${docsPath.absolute.path}${Platform.pathSeparator}$memesPathName";
+    final memePath =
+        "${docsPath.absolute.path}${Platform.pathSeparator}$memesPathName";
     final memesDirectory = Directory(memePath);
     await memesDirectory.create(recursive: true);
     final currentFiles = memesDirectory.listSync();
@@ -106,7 +109,8 @@ class SaveMemeInteractor {
   Future<String> _createNewFile2(final String imagePath) async {
     // создаем директорию с мемами
     final docsPath = await getApplicationDocumentsDirectory();
-    final memePath = "${docsPath.absolute.path}${Platform.pathSeparator}$memesPathName";
+    final memePath =
+        "${docsPath.absolute.path}${Platform.pathSeparator}$memesPathName";
     await Directory(memePath).create(recursive: true);
     // получаем имя файла в нашей дирректории
     String imageName = _getFileNameByPath(imagePath);
@@ -139,6 +143,7 @@ class SaveMemeInteractor {
 
   Future<bool> saveMeme({
     required final String id,
+    required final ScreenshotController screenshotController,
     required final List<TextWithPosition> textWithPositions,
     final String? imagePath,
   }) async {
@@ -146,6 +151,10 @@ class SaveMemeInteractor {
       final meme = Meme(id: id, texts: textWithPositions);
       return MemesRepository.getInstance().addToMemes(meme);
     } else {
+      await ScreenshotInteractor.getInstance().saveThumbnail(
+        id,
+        screenshotController,
+      );
       final newImagePath = await _createNewFile(imagePath);
       final meme = Meme(
         id: id,
