@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -40,5 +41,6 @@ class ScreenshotInteractor {
         File("${appDocs.absolute.path}${Platform.pathSeparator}$memeId.png");
     await imageFile.create();
     await imageFile.writeAsBytes(image);
+    await FileImage(imageFile).evict();
   }
 }
