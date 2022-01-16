@@ -54,10 +54,8 @@ class CreateMemeBloc {
         if (meme != null) {
           final memeText = meme.texts
               .map(
-                (textWithPosition) => MemeText(
-                  id: textWithPosition.id,
-                  text: textWithPosition.text,
-                ),
+                (textWithPosition) =>
+                    MemeText.createFromTextWithPosition(textWithPosition),
               )
               .toList();
           final memeTextOffsets = meme.texts
@@ -117,6 +115,8 @@ class CreateMemeBloc {
         id: memeText.id,
         text: memeText.text,
         position: position,
+        fontSize: memeText.fontSize,
+        color: memeText.color,
       );
     }).toList();
     saveMemeSubscription?.cancel();
@@ -174,8 +174,12 @@ class CreateMemeBloc {
     final copiedList = [...memeTextsSubject.value];
     int index = copiedList.indexWhere((memeText) => memeText.id == id);
     if (index != -1) {
+      final oldMemeText = copiedList[index];
       copiedList.removeAt(index);
-      copiedList.insert(index, MemeText(id: id, text: text));
+      copiedList.insert(
+        index,
+        oldMemeText.copyWithChangedText(text),
+      );
       memeTextsSubject.add(copiedList);
     }
   }
