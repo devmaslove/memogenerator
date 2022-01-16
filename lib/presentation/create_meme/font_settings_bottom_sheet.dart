@@ -36,8 +36,66 @@ class FontSettingsBottomSheet extends StatelessWidget {
             padding: 8,
             selected: true,
           ),
+          const SizedBox(height: 48),
+          const FontSizeSlider(),
         ],
       ),
+    );
+  }
+}
+
+class FontSizeSlider extends StatefulWidget {
+  const FontSizeSlider({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<FontSizeSlider> createState() => _FontSizeSliderState();
+}
+
+class _FontSizeSliderState extends State<FontSizeSlider> {
+  double fontSize = 20;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const SizedBox(width: 16),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            "Size:",
+            style: TextStyle(
+              color: AppColors.darkGrey,
+              fontSize: 20,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+        Expanded(
+          child: SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppColors.fuchsia,
+              inactiveTrackColor: AppColors.fuchsia38,
+              valueIndicatorShape: const PaddleSliderValueIndicatorShape(),
+              thumbColor: AppColors.fuchsia,
+              inactiveTickMarkColor: AppColors.fuchsia,
+              valueIndicatorColor: AppColors.fuchsia,
+            ),
+            child: Slider(
+              min: 16,
+              max: 32,
+              divisions: 10,
+              label: fontSize.round().toString(),
+              value: fontSize,
+              onChanged: (double value) {
+                setState(() => fontSize = value);
+              },
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+      ],
     );
   }
 }
