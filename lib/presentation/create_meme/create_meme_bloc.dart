@@ -93,6 +93,7 @@ class CreateMemeBloc {
     final String textId,
     final Color color,
     final double fontSize,
+    final FontWeight fontWeight,
   ) {
     final copiedList = [...memeTextsSubject.value];
     int index = copiedList.indexWhere((memeText) => memeText.id == textId);
@@ -101,7 +102,11 @@ class CreateMemeBloc {
       copiedList.removeAt(index);
       copiedList.insert(
         index,
-        oldMemeText.copyWithChangedFontSettings(color, fontSize),
+        oldMemeText.copyWithChangedFontSettings(
+          color,
+          fontSize,
+          fontWeight,
+        ),
       );
       memeTextsSubject.add(copiedList);
     }
@@ -134,6 +139,7 @@ class CreateMemeBloc {
         text: memeText.text,
         position: position,
         fontSize: memeText.fontSize,
+        fontWeight: memeText.fontWeight,
         color: memeText.color,
       );
     }).toList();
@@ -226,8 +232,7 @@ class CreateMemeBloc {
           final memeTextsOffset = memeTextsOffsets
               .firstWhereOrNull((element) => element.id == memeText.id);
           return MemeTextWithOffset(
-              memeText: memeText,
-              offset: memeTextsOffset?.offset);
+              memeText: memeText, offset: memeTextsOffset?.offset);
         }).toList();
       }).distinct((prev, next) => listEquals(prev, next));
 

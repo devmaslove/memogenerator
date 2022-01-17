@@ -7,27 +7,28 @@ import 'package:memogenerator/presentation/widgets/app_button.dart';
 import 'package:memogenerator/resources/app_colors.dart';
 import 'package:provider/provider.dart';
 
-class FontSettingsBottomSheet extends StatefulWidget {
+class FontSettingBottomSheet extends StatefulWidget {
   final MemeText memeText;
 
-  const FontSettingsBottomSheet({
+  const FontSettingBottomSheet({
     Key? key,
     required this.memeText,
   }) : super(key: key);
 
   @override
-  State<FontSettingsBottomSheet> createState() =>
-      _FontSettingsBottomSheetState();
+  State<FontSettingBottomSheet> createState() => _FontSettingBottomSheetState();
 }
 
-class _FontSettingsBottomSheetState extends State<FontSettingsBottomSheet> {
+class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
   late double fontSize;
   late Color color;
+  late FontWeight fontWeight;
 
   @override
   void initState() {
     super.initState();
     fontSize = widget.memeText.fontSize;
+    fontWeight = widget.memeText.fontWeight;
     color = widget.memeText.color;
   }
 
@@ -76,6 +77,7 @@ class _FontSettingsBottomSheetState extends State<FontSettingsBottomSheet> {
             textId: widget.memeText.id,
             color: color,
             fontSize: fontSize,
+            fontWeight: fontWeight,
           ),
           const SizedBox(height: 48),
         ],
@@ -88,12 +90,14 @@ class Buttons extends StatelessWidget {
   final String textId;
   final Color color;
   final double fontSize;
+  final FontWeight fontWeight;
 
   const Buttons({
     Key? key,
     required this.textId,
     required this.color,
     required this.fontSize,
+    required this.fontWeight,
   }) : super(key: key);
 
   @override
@@ -110,7 +114,12 @@ class Buttons extends StatelessWidget {
         const SizedBox(width: 24),
         AppButton(
           onTap: () {
-            bloc.changeFontSettings(textId, color, fontSize);
+            bloc.changeFontSettings(
+              textId,
+              color,
+              fontSize,
+              fontWeight,
+            );
             Navigator.of(context).pop();
           },
           text: "Сохранить",
