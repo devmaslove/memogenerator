@@ -89,6 +89,24 @@ class CreateMemeBloc {
     );
   }
 
+  void changeFontSettings(
+    final String textId,
+    final Color color,
+    final double fontSize,
+  ) {
+    final copiedList = [...memeTextsSubject.value];
+    int index = copiedList.indexWhere((memeText) => memeText.id == textId);
+    if (index != -1) {
+      final oldMemeText = copiedList[index];
+      copiedList.removeAt(index);
+      copiedList.insert(
+        index,
+        oldMemeText.copyWithChangedFontSettings(color, fontSize),
+      );
+      memeTextsSubject.add(copiedList);
+    }
+  }
+
   void shareMeme() {
     shareMemeSubscription?.cancel();
     shareMemeSubscription = ScreenshotInteractor.getInstance()
@@ -208,8 +226,7 @@ class CreateMemeBloc {
           final memeTextsOffset = memeTextsOffsets
               .firstWhereOrNull((element) => element.id == memeText.id);
           return MemeTextWithOffset(
-              id: memeText.id,
-              text: memeText.text,
+              memeText: memeText,
               offset: memeTextsOffset?.offset);
         }).toList();
       }).distinct((prev, next) => listEquals(prev, next));
