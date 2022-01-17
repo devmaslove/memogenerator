@@ -43,39 +43,45 @@ class _CreateMemePageState extends State<CreateMemePage> {
   Widget build(BuildContext context) {
     return Provider.value(
       value: bloc,
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: AppBar(
-          backgroundColor: AppColors.lemon,
-          foregroundColor: AppColors.darkGrey,
-          title: const Text("Создаём мем"),
-          bottom: const EditTextBar(),
-          actions: [
-            GestureDetector(
-              onTap: () => bloc.shareMeme(),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Icon(
-                  Icons.share,
-                  color: AppColors.darkGrey,
+      child: WillPopScope(
+        onWillPop: () async {
+          final goBack = await showConfirmationExitDialog(context);
+          return goBack ?? false;
+        },
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          appBar: AppBar(
+            backgroundColor: AppColors.lemon,
+            foregroundColor: AppColors.darkGrey,
+            title: const Text("Создаём мем"),
+            bottom: const EditTextBar(),
+            actions: [
+              GestureDetector(
+                onTap: () => bloc.shareMeme(),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Icon(
+                    Icons.share,
+                    color: AppColors.darkGrey,
+                  ),
                 ),
               ),
-            ),
-            GestureDetector(
-              onTap: () => bloc.saveMeme(),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Icon(
-                  Icons.save,
-                  color: AppColors.darkGrey,
+              GestureDetector(
+                onTap: () => bloc.saveMeme(),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Icon(
+                    Icons.save,
+                    color: AppColors.darkGrey,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        body: const SafeArea(
-          child: CreateMemePageContent(),
+            ],
+          ),
+          backgroundColor: Colors.white,
+          body: const SafeArea(
+            child: CreateMemePageContent(),
+          ),
         ),
       ),
     );
@@ -85,6 +91,31 @@ class _CreateMemePageState extends State<CreateMemePage> {
   void dispose() {
     bloc.dispose();
     super.dispose();
+  }
+
+  Future<bool?> showConfirmationExitDialog(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16),
+          title: const Text("Хотите выйти?"),
+          content: const Text("Вы потеряете несохраненные изменения"),
+          actions: [
+            AppButton(
+              onTap: () => Navigator.of(context).pop(false),
+              text: "Отмена",
+              color: AppColors.darkGrey,
+            ),
+            AppButton(
+              onTap: () => Navigator.of(context).pop(true),
+              text: "Выйти",
+              color: AppColors.fuchsia,
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -210,11 +241,13 @@ class BottomList extends StatelessWidget {
                   if (index == 0) {
                     return Padding(
                       padding: const EdgeInsets.all(12),
-                      child: AppButton(
-                        onTap: () => bloc.addNewText(),
-                        text: "Добавить текст",
-                        color: AppColors.fuchsia,
-                        icon: Icons.add,
+                      child: Center(
+                        child: AppButton(
+                          onTap: () => bloc.addNewText(),
+                          text: "Добавить текст",
+                          color: AppColors.fuchsia,
+                          icon: Icons.add,
+                        ),
                       ),
                     );
                   }
