@@ -208,6 +208,19 @@ class CreateMemeBloc {
     }
   }
 
+  void deleteMemText(final String textId) {
+    final copiedList = [...memeTextsSubject.value];
+    int index = copiedList.indexWhere((memeText) => memeText.id == textId);
+    if (index != -1) {
+      if (selectedMemeTextSubject.value != null &&
+          selectedMemeTextSubject.value!.id == textId) {
+        deselectMemText();
+      }
+      copiedList.removeAt(index);
+      memeTextsSubject.add(copiedList);
+    }
+  }
+
   void selectMemText(final String id) {
     final foundMemText =
         memeTextsSubject.value.firstWhereOrNull((element) => element.id == id);

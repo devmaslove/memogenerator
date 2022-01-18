@@ -327,6 +327,15 @@ class BottomMemeText extends StatelessWidget {
                 child: Icon(Icons.font_download_outlined),
               ),
             ),
+            GestureDetector(
+              onTap: () {
+                bloc.deleteMemText(item.memeText.id);
+              },
+              child: const Padding(
+                padding: EdgeInsets.all(8),
+                child: Icon(Icons.delete_forever_outlined),
+              ),
+            ),
             const SizedBox(width: 4),
           ],
         ),
