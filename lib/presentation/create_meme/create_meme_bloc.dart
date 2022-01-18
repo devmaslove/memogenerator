@@ -36,7 +36,7 @@ class CreateMemeBloc {
   StreamSubscription<void>? shareMemeSubscription;
 
   final String id;
-  bool _saved = true;
+  bool _changed = true;
 
   CreateMemeBloc({
     final String? id,
@@ -83,6 +83,7 @@ class CreateMemeBloc {
           } else {
             memePathSubject.add(meme.memePath);
           }
+          _changed = false;
         }
       },
       onError: (error, stackTrace) =>
@@ -90,7 +91,7 @@ class CreateMemeBloc {
     );
   }
 
-  bool isNeedSave() => !_saved;
+  bool isNeedSave() => _changed;
 
   void changeFontSettings(
     final String textId,
@@ -112,7 +113,7 @@ class CreateMemeBloc {
         ),
       );
       memeTextsSubject.add(copiedList);
-      _saved = false;
+      _changed = true;
     }
   }
 
@@ -158,7 +159,7 @@ class CreateMemeBloc {
         .asStream()
         .listen(
       (saved) {
-        _saved = true;
+        _changed = false;
         print("Meme saved: $saved");
       },
       onError: (error, stackTrace) =>
@@ -180,7 +181,7 @@ class CreateMemeBloc {
 
   void changeMemeTextOffset(final String id, final Offset offset) {
     newMemeTextOffsetSubject.add(MemeTextOffset(id: id, offset: offset));
-    _saved = false;
+    _changed = true;
   }
 
   void _changeMemeTextOffsetInternal(final MemeTextOffset newMemeTextOffset) {
@@ -198,7 +199,7 @@ class CreateMemeBloc {
     final newMemeText = MemeText.create();
     memeTextsSubject.add([...memeTextsSubject.value, newMemeText]);
     selectedMemeTextSubject.add(newMemeText);
-    _saved = false;
+    _changed = true;
   }
 
   void changeMemText(final String id, final String text) {
@@ -212,7 +213,7 @@ class CreateMemeBloc {
         oldMemeText.copyWithChangedText(text),
       );
       memeTextsSubject.add(copiedList);
-      _saved = false;
+      _changed = true;
     }
   }
 
@@ -226,7 +227,7 @@ class CreateMemeBloc {
       }
       copiedList.removeAt(index);
       memeTextsSubject.add(copiedList);
-      _saved = false;
+      _changed = true;
     }
   }
 
