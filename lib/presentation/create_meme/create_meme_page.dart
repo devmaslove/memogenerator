@@ -503,6 +503,7 @@ class _DraggableMemeTextState extends State<DraggableMemeText> {
                 padding: _padding,
                 selected: selected,
                 fontSize: widget.memeTextWithOffset.memeText.fontSize,
+                fontWeight: widget.memeTextWithOffset.memeText.fontWeight,
                 color: widget.memeTextWithOffset.memeText.color,
               );
             }),

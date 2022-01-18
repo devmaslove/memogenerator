@@ -10,6 +10,7 @@ class MemeTextOnCanvas extends StatelessWidget {
     required this.selected,
     required this.fontSize,
     required this.color,
+    required this.fontWeight,
   }) : super(key: key);
 
   final String text;
@@ -18,6 +19,7 @@ class MemeTextOnCanvas extends StatelessWidget {
   final bool selected;
   final double fontSize;
   final Color color;
+  final FontWeight fontWeight;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +39,7 @@ class MemeTextOnCanvas extends StatelessWidget {
         textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: fontSize,
+          fontWeight: fontWeight,
           color: color,
           height: 1.0,
         ),

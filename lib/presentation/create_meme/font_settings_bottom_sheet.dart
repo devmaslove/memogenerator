@@ -56,6 +56,7 @@ class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
           selected: true,
           fontSize: fontSize,
           color: color,
+          fontWeight: fontWeight,
         ),
         const SizedBox(height: 48),
         FontSizeSlider(
@@ -70,6 +71,13 @@ class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
             this.color = color;
           });
         }),
+        const SizedBox(height: 16),
+        FontWeightSlider(
+          initialFontWeight: fontWeight.index,
+          changeFontWeight: (value) {
+            setState(() => fontWeight = FontWeight.values[value]);
+          },
+        ),
         const SizedBox(height: 36),
         Buttons(
           textId: widget.memeText.id,
@@ -245,6 +253,74 @@ class _FontSizeSliderState extends State<FontSizeSlider> {
                 setState(() {
                   fontSize = value;
                   widget.changeFontSize(value);
+                });
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class FontWeightSlider extends StatefulWidget {
+  final ValueChanged<int> changeFontWeight;
+  final int initialFontWeight;
+
+  const FontWeightSlider({
+    Key? key,
+    required this.changeFontWeight,
+    required this.initialFontWeight,
+  }) : super(key: key);
+
+  @override
+  _FontWeightSliderState createState() => _FontWeightSliderState();
+}
+
+class _FontWeightSliderState extends State<FontWeightSlider> {
+  late int fontWeight;
+
+  @override
+  void initState() {
+    super.initState();
+    fontWeight = widget.initialFontWeight;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const SizedBox(width: 16),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            "Font Weight:",
+            style: TextStyle(
+              color: AppColors.darkGrey,
+              fontSize: 20,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+        Expanded(
+          child: SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppColors.fuchsia,
+              inactiveTrackColor: AppColors.fuchsia38,
+              valueIndicatorShape: const PaddleSliderValueIndicatorShape(),
+              thumbColor: AppColors.fuchsia,
+              inactiveTickMarkColor: AppColors.fuchsia,
+              valueIndicatorColor: AppColors.fuchsia,
+            ),
+            child: Slider(
+              min: FontWeight.w100.index.toDouble(),
+              max: FontWeight.w900.index.toDouble(),
+              divisions: FontWeight.w900.index,
+              value: fontWeight.toDouble(),
+              onChanged: (double value) {
+                setState(() {
+                  fontWeight = value.toInt();
+                  widget.changeFontWeight(fontWeight);
                 });
               },
             ),
