@@ -44,8 +44,11 @@ class _CreateMemePageState extends State<CreateMemePage> {
       value: bloc,
       child: WillPopScope(
         onWillPop: () async {
-          final goBack = await showConfirmationExitDialog(context);
-          return goBack ?? false;
+          if (bloc.isNeedSave()) {
+            final goBack = await showConfirmationExitDialog(context);
+            return goBack ?? false;
+          }
+          return true;
         },
         child: Scaffold(
           resizeToAvoidBottomInset: false,
