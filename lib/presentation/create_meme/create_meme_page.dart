@@ -308,7 +308,8 @@ class BottomMemeText extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            GestureDetector(
+            BottomMemeTextAction(
+              iconData: Icons.font_download_outlined,
               onTap: () {
                 showModalBottomSheet(
                     context: context,
@@ -325,23 +326,36 @@ class BottomMemeText extends StatelessWidget {
                       );
                     });
               },
-              child: const Padding(
-                padding: EdgeInsets.all(8),
-                child: Icon(Icons.font_download_outlined),
-              ),
             ),
-            GestureDetector(
-              onTap: () {
-                bloc.deleteMemText(item.memeText.id);
-              },
-              child: const Padding(
-                padding: EdgeInsets.all(8),
-                child: Icon(Icons.delete_forever_outlined),
-              ),
+            BottomMemeTextAction(
+              iconData: Icons.delete_forever_outlined,
+              onTap: () => bloc.deleteMemeText(item.memeText.id),
             ),
             const SizedBox(width: 4),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class BottomMemeTextAction extends StatelessWidget {
+  final IconData iconData;
+  final VoidCallback onTap;
+
+  const BottomMemeTextAction({
+    Key? key,
+    required this.iconData,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(iconData),
       ),
     );
   }

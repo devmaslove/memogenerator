@@ -93,6 +93,32 @@ class CreateMemeBloc {
 
   bool isNeedSave() => _changed;
 
+  Future<bool> isAllSaved() async {
+    final savedMeme = await MemesRepository.getInstance().getMeme(id);
+    if (savedMeme == null) return false;
+    final savedMemeText = savedMeme.texts
+        .map(
+          (textWithPosition) =>
+              MemeText.createFromTextWithPosition(textWithPosition),
+        )
+        .toList();
+    final savedMemeTextOffsets = savedMeme.texts
+        .map(
+          (textWithPosition) => MemeTextOffset(
+            id: textWithPosition.id,
+            offset: Offset(
+              textWithPosition.position.left,
+              textWithPosition.position.top,
+            ),
+          ),
+        )
+        .toList();
+    return const DeepCollectionEquality.unordered()
+            .equals(savedMemeText, memeTextsSubject.value) &&
+        const DeepCollectionEquality.unordered()
+            .equals(savedMemeTextOffsets, memeTextOffsetsSubject.value);
+  }
+
   void changeFontSettings(
     final String textId,
     final Color color,
@@ -217,7 +243,7 @@ class CreateMemeBloc {
     }
   }
 
-  void deleteMemText(final String textId) {
+  void deleteMemeText(final String textId) {
     final copiedList = [...memeTextsSubject.value];
     int index = copiedList.indexWhere((memeText) => memeText.id == textId);
     if (index != -1) {

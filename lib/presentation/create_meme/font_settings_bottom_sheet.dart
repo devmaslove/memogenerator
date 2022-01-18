@@ -34,6 +34,7 @@ class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -73,17 +74,21 @@ class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
         }),
         const SizedBox(height: 16),
         FontWeightSlider(
-          initialFontWeight: fontWeight.index,
+          initialFontWeight: fontWeight,
           changeFontWeight: (value) {
-            setState(() => fontWeight = FontWeight.values[value]);
+            setState(() => fontWeight = value);
           },
         ),
         const SizedBox(height: 36),
         Buttons(
-          textId: widget.memeText.id,
-          color: color,
-          fontSize: fontSize,
-          fontWeight: fontWeight,
+          onPositiveButtonAction: () {
+            bloc.changeFontSettings(
+              widget.memeText.id,
+              color,
+              fontSize,
+              fontWeight,
+            );
+          },
         ),
         const SizedBox(height: 48),
       ],
@@ -92,22 +97,15 @@ class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
 }
 
 class Buttons extends StatelessWidget {
-  final String textId;
-  final Color color;
-  final double fontSize;
-  final FontWeight fontWeight;
+  final VoidCallback onPositiveButtonAction;
 
   const Buttons({
     Key? key,
-    required this.textId,
-    required this.color,
-    required this.fontSize,
-    required this.fontWeight,
+    required this.onPositiveButtonAction,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
     return Row(
       children: [
         const Expanded(child: SizedBox()),
@@ -119,12 +117,7 @@ class Buttons extends StatelessWidget {
         const SizedBox(width: 24),
         AppButton(
           onTap: () {
-            bloc.changeFontSettings(
-              textId,
-              color,
-              fontSize,
-              fontWeight,
-            );
+            onPositiveButtonAction();
             Navigator.of(context).pop();
           },
           text: "Сохранить",
@@ -264,8 +257,8 @@ class _FontSizeSliderState extends State<FontSizeSlider> {
 }
 
 class FontWeightSlider extends StatefulWidget {
-  final ValueChanged<int> changeFontWeight;
-  final int initialFontWeight;
+  final ValueChanged<FontWeight> changeFontWeight;
+  final FontWeight initialFontWeight;
 
   const FontWeightSlider({
     Key? key,
@@ -278,7 +271,7 @@ class FontWeightSlider extends StatefulWidget {
 }
 
 class _FontWeightSliderState extends State<FontWeightSlider> {
-  late int fontWeight;
+  late FontWeight fontWeight;
 
   @override
   void initState() {
@@ -316,10 +309,10 @@ class _FontWeightSliderState extends State<FontWeightSlider> {
               min: FontWeight.w100.index.toDouble(),
               max: FontWeight.w900.index.toDouble(),
               divisions: FontWeight.w900.index,
-              value: fontWeight.toDouble(),
+              value: fontWeight.index.toDouble(),
               onChanged: (double value) {
                 setState(() {
-                  fontWeight = value.toInt();
+                  fontWeight = FontWeight.values[value.toInt()];
                   widget.changeFontWeight(fontWeight);
                 });
               },
