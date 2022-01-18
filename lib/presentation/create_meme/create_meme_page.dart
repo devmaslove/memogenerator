@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:memogenerator/presentation/create_meme/create_meme_bloc.dart';
 import 'package:memogenerator/presentation/create_meme/font_settings_bottom_sheet.dart';
 import 'package:memogenerator/presentation/create_meme/meme_text_on_canvas.dart';
@@ -310,6 +309,12 @@ class BottomMemeText extends StatelessWidget {
               onTap: () {
                 showModalBottomSheet(
                     context: context,
+                    backgroundColor: Colors.white,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(24),
+                      ),
+                    ),
                     builder: (context) {
                       return Provider.value(
                         value: bloc,
