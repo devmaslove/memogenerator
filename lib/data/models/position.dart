@@ -8,7 +8,7 @@ class Position extends Equatable {
   final double top;
   final double left;
 
-  Position({
+  const Position({
     required this.top,
     required this.left,
   });

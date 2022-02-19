@@ -2,6 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferenceData {
   static const memeKey = "meme_key";
+  static const templateKey = "template_key";
 
   static SharedPreferenceData? _instance;
 
@@ -10,14 +11,28 @@ class SharedPreferenceData {
 
   SharedPreferenceData._internal();
 
-  Future<bool> setMemes(final List<String> memes) async {
+  Future<bool> setMemes(final List<String> memes) => setItems(memeKey, memes);
+
+  Future<List<String>> getMemes() => getItems(memeKey);
+
+  Future<bool> setTemplates(final List<String> templates) =>
+      setItems(templateKey, templates);
+
+  Future<List<String>> getTemplates() => getItems(templateKey);
+
+  Future<bool> setItems(
+    final String key,
+    final List<String> items,
+  ) async {
     final sp = await SharedPreferences.getInstance();
-    final result = await sp.setStringList(memeKey, memes);
+    final result = await sp.setStringList(key, items);
     return result;
   }
 
-  Future<List<String>> getMemes() async {
+  Future<List<String>> getItems(
+    final String key,
+  ) async {
     final sp = await SharedPreferences.getInstance();
-    return sp.getStringList(memeKey) ?? [];
+    return sp.getStringList(key) ?? [];
   }
 }
