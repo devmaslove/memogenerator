@@ -46,7 +46,12 @@ class MainBloc {
 
   Future<String?> selectMeme() async {
     final xFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    return xFile?.path;
+    final imagePath = xFile?.path;
+    if (imagePath != null) {
+      await SaveTemplateInteractor.getInstance()
+          .saveTemplate(imagePath: imagePath);
+    }
+    return imagePath;
   }
 
   void dispose() {}
