@@ -47,7 +47,9 @@ class MainBloc {
 
   Future<String?> selectMeme() async {
     if (Platform.isMacOS) {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+      );
       final imagePath = result?.files.single.path;
       if (imagePath != null) {
         await SaveTemplateInteractor.getInstance()
