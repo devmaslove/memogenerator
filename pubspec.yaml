@@ -11,25 +11,27 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.4
-  rxdart: ^0.27.3
-  provider: ^6.0.1
-  google_fonts: ^2.1.0
-  uuid: ^3.0.5
-  json_annotation: ^4.4.0
+  cupertino_icons: ^1.0.5
+  rxdart: ^0.27.5
+  provider: ^6.0.3
+  google_fonts: ^3.0.1
+  uuid: ^3.0.6
+  json_annotation: ^4.6.0
   equatable: ^2.0.3
-  shared_preferences: ^2.0.11
-  image_picker: ^0.8.4+4
-  path_provider: ^2.0.8
+  shared_preferences: ^2.0.15
+  image_picker: ^0.8.5+3
+  file_picker: ^5.0.0
+  path_provider: ^2.0.11
   screenshot: ^1.2.3
-  share_plus: ^3.0.4
+  share_plus: ^4.0.10
+  path: ^1.8.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^1.0.4
-  json_serializable: ^6.1.1
-  build_runner: ^2.1.5
+  flutter_lints: ^2.0.1
+  json_serializable: ^6.3.1
+  build_runner: ^2.2.0
 
 flutter:
   uses-material-design: true

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:memogenerator/data/models/meme.dart';
 import 'package:memogenerator/data/models/template.dart';
@@ -45,6 +46,15 @@ class MainBloc {
       );
 
   Future<String?> selectMeme() async {
+    if (Platform.isMacOS) {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      final imagePath = result?.files.single.path;
+      if (imagePath != null) {
+        await SaveTemplateInteractor.getInstance()
+            .saveTemplate(imagePath: imagePath);
+      }
+      return imagePath;
+    }
     final xFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     final imagePath = xFile?.path;
     if (imagePath != null) {
