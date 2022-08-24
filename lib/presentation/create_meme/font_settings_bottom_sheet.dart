@@ -50,36 +50,46 @@ class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
           ),
         ),
         const SizedBox(height: 16),
-        MemeTextOnCanvas(
-          text: widget.memeText.text,
-          parentConstraints: const BoxConstraints.expand(),
-          padding: 8,
-          selected: true,
-          fontSize: fontSize,
-          color: color,
-          fontWeight: fontWeight,
-        ),
-        const SizedBox(height: 48),
-        FontSizeSlider(
-          initialFontSize: fontSize,
-          changeFontSize: (value) {
-            setState(() => fontSize = value);
-          },
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                MemeTextOnCanvas(
+                  text: widget.memeText.text,
+                  parentConstraints: const BoxConstraints.expand(),
+                  padding: 8,
+                  selected: true,
+                  fontSize: fontSize,
+                  color: color,
+                  fontWeight: fontWeight,
+                ),
+                const SizedBox(height: 48),
+                FontSizeSlider(
+                  initialFontSize: fontSize,
+                  changeFontSize: (value) {
+                    setState(() => fontSize = value);
+                  },
+                ),
+                const SizedBox(height: 16),
+                ColorSelection(changeColor: (color) {
+                  setState(() {
+                    this.color = color;
+                  });
+                }),
+                const SizedBox(height: 16),
+                FontWeightSlider(
+                  initialFontWeight: fontWeight,
+                  changeFontWeight: (value) {
+                    setState(() => fontWeight = value);
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 16),
-        ColorSelection(changeColor: (color) {
-          setState(() {
-            this.color = color;
-          });
-        }),
-        const SizedBox(height: 16),
-        FontWeightSlider(
-          initialFontWeight: fontWeight,
-          changeFontWeight: (value) {
-            setState(() => fontWeight = value);
-          },
-        ),
-        const SizedBox(height: 36),
         Buttons(
           onPositiveButtonAction: () {
             bloc.changeFontSettings(
@@ -90,7 +100,7 @@ class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
             );
           },
         ),
-        const SizedBox(height: 48),
+        const SizedBox(height: 16),
       ],
     );
   }
