@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:memogenerator/presentation/create_meme/create_meme_bloc.dart';
 import 'package:memogenerator/presentation/create_meme/meme_text_on_canvas.dart';
@@ -277,7 +276,7 @@ class FontWeightSlider extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _FontWeightSliderState createState() => _FontWeightSliderState();
+  State<FontWeightSlider> createState() => _FontWeightSliderState();
 }
 
 class _FontWeightSliderState extends State<FontWeightSlider> {
