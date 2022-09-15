@@ -15,7 +15,7 @@ class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
 
   @override
-  _MainPageState createState() => _MainPageState();
+  State<MainPage> createState() => _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
@@ -114,9 +114,10 @@ class CreateMemeFab extends StatelessWidget {
     final bloc = Provider.of<MainBloc>(context, listen: false);
     return FloatingActionButton.extended(
       onPressed: () async {
+        final navigator = Navigator.of(context);
         final selectedMemePath = await bloc.selectMeme();
         if (selectedMemePath == null) return;
-        Navigator.of(context).push(
+        navigator.push(
           MaterialPageRoute(
             builder: (_) => CreateMemePage(
               selectedMemePath: selectedMemePath,
