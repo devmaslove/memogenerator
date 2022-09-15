@@ -23,7 +23,7 @@ class CreateMemePage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _CreateMemePageState createState() => _CreateMemePageState();
+  State<CreateMemePage> createState() => _CreateMemePageState();
 }
 
 class _CreateMemePageState extends State<CreateMemePage> {

@@ -52,16 +52,18 @@ class MainBloc {
       );
       final imagePath = result?.files.single.path;
       if (imagePath != null) {
-        await SaveTemplateInteractor.getInstance()
-            .saveTemplate(imagePath: imagePath);
+        await SaveTemplateInteractor.getInstance().saveTemplate(
+          imagePath: imagePath,
+        );
       }
       return imagePath;
     }
     final xFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     final imagePath = xFile?.path;
     if (imagePath != null) {
-      await SaveTemplateInteractor.getInstance()
-          .saveTemplate(imagePath: imagePath);
+      await SaveTemplateInteractor.getInstance().saveTemplate(
+        imagePath: imagePath,
+      );
     }
     return imagePath;
   }
