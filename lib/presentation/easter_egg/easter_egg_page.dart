@@ -27,14 +27,41 @@ class RocketAnimationBody extends StatefulWidget {
 class _RocketAnimationBodyState extends State<RocketAnimationBody> {
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage(AppImages.starsPattern),
-          repeat: ImageRepeat.repeat,
-        ),
-      ),
-      child: Stack(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return DecoratedBox(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(AppImages.starsPattern),
+              repeat: ImageRepeat.repeat,
+            ),
+          ),
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.elliptical(constraints.maxWidth, 200),
+                    ),
+                    color: Colors.green[700],
+                  ),
+                ),
+              ),
+              Align(
+                alignment: const Alignment(0, 0.9),
+                child: Image.asset(
+                  AppImages.rocketWithoutFire,
+                  height: 200,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
