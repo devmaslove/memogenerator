@@ -139,12 +139,13 @@ class _AnimatedIconButtonState extends State<AnimatedIconButton> {
         child: AnimatedScale(
           duration: const Duration(milliseconds: 150),
           scale: scale,
+          onEnd: () => setState(() => scale = 1.0),
+          curve: Curves.bounceInOut,
           child: Icon(
             widget.icon,
             color: AppColors.darkGrey,
             size: 24,
           ),
-          onEnd: () => setState(() => scale = 1.0),
         ),
       ),
     );
