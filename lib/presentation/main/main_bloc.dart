@@ -65,5 +65,13 @@ class MainBloc {
     return imagePath;
   }
 
+  void deleteTemplate(final String templateId) {
+    // TODO:
+  }
+
+  void deleteMeme(final String memeId) {
+    // TODO:
+  }
+
   void dispose() {}
 }

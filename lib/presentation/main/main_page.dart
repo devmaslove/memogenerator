@@ -182,25 +182,79 @@ class MemeGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = Provider.of<MainBloc>(context, listen: false);
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => CreateMemePage(id: meme.id),
         ),
       ),
-      child: Container(
-        alignment: Alignment.centerLeft,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: AppColors.darkGrey,
-            width: 1,
+      child: Stack(
+        children: [
+          Container(
+            alignment: Alignment.centerLeft,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: AppColors.darkGrey,
+                width: 1,
+              ),
+            ),
+            child: Image.file(
+              File("$docsPath${Platform.pathSeparator}${meme.id}.png"),
+              errorBuilder: (context, error, stackTrace) => Text(meme.id),
+            ),
           ),
-        ),
-        child: Image.file(
-          File("$docsPath${Platform.pathSeparator}${meme.id}.png"),
-          errorBuilder: (context, error, stackTrace) => Text(meme.id),
-        ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: GestureDetector(
+              onTap: () async {
+                final delete = await showConfirmationDeleteDialog(context);
+                if (delete == null || delete == false) return;
+                bloc.deleteMeme(meme.id);
+              },
+              child: Container(
+                margin: const EdgeInsets.all(4),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.darkGrey38,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_outline,
+                  size: 24,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Future<bool?> showConfirmationDeleteDialog(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16),
+          title: const Text("Удалить мем?"),
+          content: const Text("Выбранный мем будет удалён навсегда"),
+          actions: [
+            AppButton(
+              onTap: () => Navigator.of(context).pop(false),
+              text: "Отмена",
+              color: AppColors.darkGrey,
+            ),
+            AppButton(
+              onTap: () => Navigator.of(context).pop(true),
+              text: "Удалить",
+              color: AppColors.fuchsia,
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -242,6 +296,7 @@ class TemplateGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = Provider.of<MainBloc>(context, listen: false);
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -252,19 +307,72 @@ class TemplateGridItem extends StatelessWidget {
           ),
         );
       },
-      child: Container(
-        alignment: Alignment.centerLeft,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: AppColors.darkGrey,
-            width: 1,
+      child: Stack(
+        children: [
+          Container(
+            alignment: Alignment.centerLeft,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: AppColors.darkGrey,
+                width: 1,
+              ),
+            ),
+            child: Image.file(
+              File(template.fullImagePath),
+              errorBuilder: (context, error, stackTrace) => Text(template.id),
+            ),
           ),
-        ),
-        child: Image.file(
-          File(template.fullImagePath),
-          errorBuilder: (context, error, stackTrace) => Text(template.id),
-        ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: GestureDetector(
+              onTap: () async {
+                final delete = await showConfirmationDeleteDialog(context);
+                if (delete == null || delete == false) return;
+                bloc.deleteTemplate(template.id);
+              },
+              child: Container(
+                margin: const EdgeInsets.all(4),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.darkGrey38,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_outline,
+                  size: 24,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Future<bool?> showConfirmationDeleteDialog(BuildContext context) {
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          actionsPadding: const EdgeInsets.symmetric(horizontal: 16),
+          title: const Text("Удалить шаблон?"),
+          content: const Text("Выбранный шаблон будет удалён навсегда"),
+          actions: [
+            AppButton(
+              onTap: () => Navigator.of(context).pop(false),
+              text: "Отмена",
+              color: AppColors.darkGrey,
+            ),
+            AppButton(
+              onTap: () => Navigator.of(context).pop(true),
+              text: "Удалить",
+              color: AppColors.fuchsia,
+            ),
+          ],
+        );
+      },
     );
   }
 }
