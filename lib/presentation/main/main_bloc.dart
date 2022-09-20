@@ -69,11 +69,11 @@ class MainBloc {
   }
 
   void deleteTemplate(final String templateId) {
-    // TODO:
+    TemplatesRepository.getInstance().removeFromTemplates(templateId);
   }
 
   void deleteMeme(final String memeId) {
-    // TODO:
+    MemesRepository.getInstance().removeFromMemes(memeId);
   }
 
   void dispose() {}
