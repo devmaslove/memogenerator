@@ -14,6 +14,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
 
 class MainBloc {
+  Stream<List<Meme>> observeMemes() =>
+      MemesRepository.getInstance().observeMemes();
+
   Stream<MemesWithDocsPath> observeMemesWithPath() =>
       Rx.combineLatest2<List<Meme>, Directory, MemesWithDocsPath>(
         MemesRepository.getInstance().observeMemes(),

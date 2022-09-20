@@ -7,6 +7,7 @@ import 'package:memogenerator/presentation/create_meme/create_meme_page.dart';
 import 'package:memogenerator/presentation/easter_egg/easter_egg_page.dart';
 import 'package:memogenerator/presentation/main/main_bloc.dart';
 import 'package:memogenerator/presentation/main/memes_with_docs_path.dart';
+import 'package:memogenerator/presentation/main/models/meme_thumbnail.dart';
 import 'package:memogenerator/presentation/main/models/template_full.dart';
 import 'package:memogenerator/presentation/widgets/app_button.dart';
 import 'package:memogenerator/resources/app_colors.dart';
@@ -175,8 +176,10 @@ class MemeGridItem extends StatelessWidget {
     Key? key,
     required this.docsPath,
     required this.meme,
+    this.memeThumbnail,
   }) : super(key: key);
 
+  final MemeThumbnail? memeThumbnail;
   final String docsPath;
   final Meme meme;
 
