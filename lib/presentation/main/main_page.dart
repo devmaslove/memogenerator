@@ -20,13 +20,26 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage>
+    with SingleTickerProviderStateMixin {
   late MainBloc bloc;
+  late TabController tabController;
+  int currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
     bloc = MainBloc();
+    tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: currentIndex,
+    );
+    tabController.addListener(() {
+      if (currentIndex != tabController.index) {
+        setState(() => currentIndex = tabController.index);
+      }
+    });
   }
 
   @override
@@ -38,45 +51,49 @@ class _MainPageState extends State<MainPage> {
           final goBack = await showConfirmationExitDialog(context);
           return goBack ?? false;
         },
-        child: DefaultTabController(
-          length: 2,
-          child: Scaffold(
-            appBar: AppBar(
-              centerTitle: true,
-              backgroundColor: AppColors.lemon,
-              foregroundColor: AppColors.darkGrey,
-              title: GestureDetector(
-                onLongPress: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const EasterEggPage(),
-                    ),
-                  );
-                },
-                child: Text(
-                  "Мемогенератор",
-                  style: GoogleFonts.seymourOne(fontSize: 24),
-                ),
-              ),
-              bottom: TabBar(
-                indicatorWeight: 3,
-                indicatorColor: AppColors.fuchsia,
-                labelColor: AppColors.darkGrey,
-                labelStyle: const TextStyle(fontSize: 14),
-                tabs: [
-                  Tab(text: "Созданные".toUpperCase()),
-                  Tab(text: "Шаблоны".toUpperCase()),
-                ],
+        child: Scaffold(
+          appBar: AppBar(
+            centerTitle: true,
+            backgroundColor: AppColors.lemon,
+            foregroundColor: AppColors.darkGrey,
+            title: GestureDetector(
+              onLongPress: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const EasterEggPage(),
+                  ),
+                );
+              },
+              child: Text(
+                "Мемогенератор",
+                style: GoogleFonts.seymourOne(fontSize: 24),
               ),
             ),
-            floatingActionButton: const CreateMemeFab(),
-            backgroundColor: Colors.white,
-            body: const TabBarView(
-              children: [
-                SafeArea(child: CreatedMemesGrid()),
-                SafeArea(child: TemplatesGrid()),
+            bottom: TabBar(
+              controller: tabController,
+              indicatorWeight: 3,
+              indicatorColor: AppColors.fuchsia,
+              labelColor: AppColors.darkGrey,
+              labelStyle: const TextStyle(fontSize: 14),
+              tabs: [
+                Tab(text: "Созданные".toUpperCase()),
+                Tab(text: "Шаблоны".toUpperCase()),
               ],
             ),
+          ),
+          floatingActionButton: AnimatedSwitcher(
+            duration: tabController.animationDuration,
+            child: currentIndex == 0
+                ? const CreateMemeFab()
+                : const CreateTemplateFab(),
+          ),
+          backgroundColor: Colors.white,
+          body: TabBarView(
+            controller: tabController,
+            children: const [
+              SafeArea(child: CreatedMemesGrid()),
+              SafeArea(child: TemplatesGrid()),
+            ],
           ),
         ),
       ),
@@ -86,6 +103,7 @@ class _MainPageState extends State<MainPage> {
   @override
   void dispose() {
     bloc.dispose();
+    tabController.dispose();
     super.dispose();
   }
 
@@ -137,7 +155,26 @@ class CreateMemeFab extends StatelessWidget {
         );
       },
       backgroundColor: AppColors.fuchsia,
-      label: Text("Создать".toUpperCase()),
+      label: const Text("Мем"),
+      icon: const Icon(Icons.add, color: Colors.white),
+    );
+  }
+}
+
+class CreateTemplateFab extends StatelessWidget {
+  const CreateTemplateFab({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = Provider.of<MainBloc>(context, listen: false);
+    return FloatingActionButton.extended(
+      onPressed: () async {
+        await bloc.selectMeme();
+      },
+      backgroundColor: AppColors.fuchsia,
+      label: const Text("Шаблон"),
       icon: const Icon(Icons.add, color: Colors.white),
     );
   }

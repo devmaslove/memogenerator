@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:memogenerator/data/models/meme.dart';
 import 'package:memogenerator/data/models/template.dart';
@@ -46,7 +47,7 @@ class MainBloc {
       );
 
   Future<String?> selectMeme() async {
-    if (Platform.isMacOS) {
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
       );
