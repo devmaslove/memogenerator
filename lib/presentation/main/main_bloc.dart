@@ -17,7 +17,7 @@ import 'package:rxdart/rxdart.dart';
 class MainBloc {
   Stream<List<MemeThumbnail>> observeMemes() =>
       Rx.combineLatest2<List<Meme>, Directory, List<MemeThumbnail>>(
-        MemesRepository.getInstance().observeMemes(),
+        MemesRepository.getInstance().observeItems(),
         getApplicationDocumentsDirectory().asStream(),
         (memes, docsDir) {
           return memes.map(
@@ -37,7 +37,7 @@ class MainBloc {
 
   Stream<List<TemplateFull>> observeTemplates() =>
       Rx.combineLatest2<List<Template>, Directory, List<TemplateFull>>(
-        TemplatesRepository.getInstance().observeTemplates(),
+        TemplatesRepository.getInstance().observeItems(),
         getApplicationDocumentsDirectory().asStream(),
         (templates, docsDir) {
           return templates.map(
@@ -80,11 +80,11 @@ class MainBloc {
   }
 
   void deleteTemplate(final String templateId) {
-    TemplatesRepository.getInstance().removeFromTemplates(templateId);
+    TemplatesRepository.getInstance().removeFromItemsById(templateId);
   }
 
   void deleteMeme(final String memeId) {
-    MemesRepository.getInstance().removeFromMemes(memeId);
+    MemesRepository.getInstance().removeFromItemsById(memeId);
   }
 
   void dispose() {}

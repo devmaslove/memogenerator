@@ -24,6 +24,6 @@ class SaveTemplateInteractor {
       id: const Uuid().v4(),
       imageUrl: newImagePath,
     );
-    return TemplatesRepository.getInstance().addToTemplates(template);
+    return TemplatesRepository.getInstance().addItemOrReplaceById(template);
   }
 }

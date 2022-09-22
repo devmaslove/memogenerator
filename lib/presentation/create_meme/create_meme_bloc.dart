@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:memogenerator/data/models/meme.dart';
@@ -15,7 +16,6 @@ import 'package:memogenerator/presentation/create_meme/models/meme_text_with_off
 import 'package:memogenerator/presentation/create_meme/models/meme_text_with_selection.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:collection/collection.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:uuid/uuid.dart';
 
@@ -50,7 +50,7 @@ class CreateMemeBloc {
 
   void _subscribeToExistentMeme() {
     existentMemeSubscription =
-        MemesRepository.getInstance().getMeme(id).asStream().listen(
+        MemesRepository.getInstance().getItemById(id).asStream().listen(
       (meme) {
         if (meme != null) {
           final memeText = meme.texts
@@ -94,7 +94,7 @@ class CreateMemeBloc {
   bool isNeedSave() => _changed;
 
   Future<bool> isAllSaved() async {
-    final savedMeme = await MemesRepository.getInstance().getMeme(id);
+    final savedMeme = await MemesRepository.getInstance().getItemById(id);
     if (savedMeme == null) return false;
     final savedMemeText = savedMeme.texts
         .map(
