@@ -169,7 +169,16 @@ class CreateTemplateFab extends StatelessWidget {
     final bloc = Provider.of<MainBloc>(context, listen: false);
     return FloatingActionButton.extended(
       onPressed: () async {
-        await bloc.selectMeme();
+        final navigator = Navigator.of(context);
+        final selectedMemePath = await bloc.selectMeme();
+        if (selectedMemePath == null) return;
+        navigator.push(
+          MaterialPageRoute(
+            builder: (_) => CreateMemePage(
+              selectedMemePath: selectedMemePath,
+            ),
+          ),
+        );
       },
       backgroundColor: AppColors.fuchsia,
       label: const Text("Шаблон"),
