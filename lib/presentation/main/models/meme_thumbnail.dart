@@ -1,11 +1,14 @@
-import 'package:memogenerator/data/models/meme.dart';
+import 'package:equatable/equatable.dart';
 
-class MemeThumbnail extends Meme {
+class MemeThumbnail extends Equatable {
   final String memeId;
   final String fullImageUrl;
 
-  MemeThumbnail({
+  const MemeThumbnail({
     required this.memeId,
     required this.fullImageUrl,
-  }) : super(id: '', texts: []);
+  });
+
+  @override
+  List<Object?> get props => [memeId, fullImageUrl];
 }
