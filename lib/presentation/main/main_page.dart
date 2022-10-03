@@ -1,33 +1,136 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:memogenerator/data/models/meme.dart';
+import 'package:memogenerator/data/models/template.dart';
+import 'package:memogenerator/data/repositories/memes_repository.dart';
+import 'package:memogenerator/data/repositories/templates_repository.dart';
+import 'package:memogenerator/domain/interactors/save_template_interactor.dart';
 import 'package:memogenerator/presentation/create_meme/create_meme_page.dart';
 import 'package:memogenerator/presentation/easter_egg/easter_egg_page.dart';
-import 'package:memogenerator/presentation/main/main_bloc.dart';
 import 'package:memogenerator/presentation/main/models/meme_thumbnail.dart';
 import 'package:memogenerator/presentation/main/models/template_full.dart';
 import 'package:memogenerator/presentation/widgets/app_button.dart';
 import 'package:memogenerator/resources/app_colors.dart';
-import 'package:provider/provider.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+import 'package:reactive_store/reactive_store.dart';
+import 'package:rxdart/rxdart.dart';
 
-class MainPage extends StatefulWidget {
-  const MainPage({Key? key}) : super(key: key);
+class MainPageStore extends RStore {
+  Stream<List<MemeThumbnail>> observeMemes() =>
+      Rx.combineLatest2<List<Meme>, Directory, List<MemeThumbnail>>(
+        MemesRepository.getInstance().observeItems(),
+        getApplicationDocumentsDirectory().asStream(),
+        (memes, docsDir) {
+          return memes.map(
+            (meme) {
+              final fullImagePath = path.join(
+                docsDir.absolute.path,
+                '${meme.id}.png',
+              );
+              return MemeThumbnail(
+                memeId: meme.id,
+                fullImageUrl: fullImagePath,
+              );
+            },
+          ).toList();
+        },
+      );
+
+  Stream<List<TemplateFull>> observeTemplates() =>
+      Rx.combineLatest2<List<Template>, Directory, List<TemplateFull>>(
+        TemplatesRepository.getInstance().observeItems(),
+        getApplicationDocumentsDirectory().asStream(),
+        (templates, docsDir) {
+          return templates.map(
+            (template) {
+              final fullImagePath = path.join(
+                docsDir.absolute.path,
+                SaveTemplateInteractor.templatesPathName,
+                template.imageUrl,
+              );
+              return TemplateFull(
+                id: template.id,
+                fullImagePath: fullImagePath,
+              );
+            },
+          ).toList();
+        },
+      );
+
+  Future<String?> selectMeme() async {
+    if (defaultTargetPlatform == TargetPlatform.macOS) {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+      );
+      final imagePath = result?.files.single.path;
+      if (imagePath != null) {
+        await SaveTemplateInteractor.getInstance().saveTemplate(
+          imagePath: imagePath,
+        );
+      }
+      return imagePath;
+    }
+    final xFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final imagePath = xFile?.path;
+    if (imagePath != null) {
+      await SaveTemplateInteractor.getInstance().saveTemplate(
+        imagePath: imagePath,
+      );
+    }
+    return imagePath;
+  }
+
+  void deleteTemplate(final String templateId) {
+    TemplatesRepository.getInstance().removeFromItemsById(templateId);
+  }
+
+  void deleteMeme(final String memeId) {
+    MemesRepository.getInstance().removeFromItemsById(memeId);
+  }
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  MainPage get widget => super.widget as MainPage;
+
+  static MainPageStore of(BuildContext context) {
+    return RStoreWidget.store<MainPageStore>(context);
+  }
 }
 
-class _MainPageState extends State<MainPage>
+class MainPage extends RStoreWidget<MainPageStore> {
+  const MainPage({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context, MainPageStore store) {
+    return const MainPageContent();
+  }
+
+  @override
+  MainPageStore createRStore() => MainPageStore();
+}
+
+class MainPageContent extends StatefulWidget {
+  const MainPageContent({Key? key}) : super(key: key);
+
+  @override
+  State<MainPageContent> createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPageContent>
     with SingleTickerProviderStateMixin {
-  late MainBloc bloc;
   late TabController tabController;
   int currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    bloc = MainBloc();
     tabController = TabController(
       length: 2,
       vsync: this,
@@ -42,57 +145,54 @@ class _MainPageState extends State<MainPage>
 
   @override
   Widget build(BuildContext context) {
-    return Provider.value(
-      value: bloc,
-      child: WillPopScope(
-        onWillPop: () async {
-          final goBack = await showConfirmationExitDialog(context);
-          return goBack ?? false;
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            centerTitle: true,
-            backgroundColor: AppColors.lemon,
-            foregroundColor: AppColors.darkGrey,
-            title: GestureDetector(
-              onLongPress: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const EasterEggPage(),
-                  ),
-                );
-              },
-              child: Text(
-                "Мемогенератор",
-                style: GoogleFonts.seymourOne(fontSize: 24),
-              ),
-            ),
-            bottom: TabBar(
-              controller: tabController,
-              indicatorWeight: 3,
-              indicatorColor: AppColors.fuchsia,
-              labelColor: AppColors.darkGrey,
-              labelStyle: const TextStyle(fontSize: 14),
-              tabs: [
-                Tab(text: "Созданные".toUpperCase()),
-                Tab(text: "Шаблоны".toUpperCase()),
-              ],
+    return WillPopScope(
+      onWillPop: () async {
+        final goBack = await showConfirmationExitDialog(context);
+        return goBack ?? false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          backgroundColor: AppColors.lemon,
+          foregroundColor: AppColors.darkGrey,
+          title: GestureDetector(
+            onLongPress: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const EasterEggPage(),
+                ),
+              );
+            },
+            child: Text(
+              "Мемогенератор",
+              style: GoogleFonts.seymourOne(fontSize: 24),
             ),
           ),
-          floatingActionButton: AnimatedSwitcher(
-            duration: tabController.animationDuration,
-            child: currentIndex == 0
-                ? const CreateMemeFab()
-                : const CreateTemplateFab(),
-          ),
-          backgroundColor: Colors.white,
-          body: TabBarView(
+          bottom: TabBar(
             controller: tabController,
-            children: const [
-              SafeArea(child: CreatedMemesGrid()),
-              SafeArea(child: TemplatesGrid()),
+            indicatorWeight: 3,
+            indicatorColor: AppColors.fuchsia,
+            labelColor: AppColors.darkGrey,
+            labelStyle: const TextStyle(fontSize: 14),
+            tabs: [
+              Tab(text: "Созданные".toUpperCase()),
+              Tab(text: "Шаблоны".toUpperCase()),
             ],
           ),
+        ),
+        floatingActionButton: AnimatedSwitcher(
+          duration: tabController.animationDuration,
+          child: currentIndex == 0
+              ? const CreateMemeFab()
+              : const CreateTemplateFab(),
+        ),
+        backgroundColor: Colors.white,
+        body: TabBarView(
+          controller: tabController,
+          children: const [
+            SafeArea(child: CreatedMemesGrid()),
+            SafeArea(child: TemplatesGrid()),
+          ],
         ),
       ),
     );
@@ -100,7 +200,6 @@ class _MainPageState extends State<MainPage>
 
   @override
   void dispose() {
-    bloc.dispose();
     tabController.dispose();
     super.dispose();
   }
@@ -138,11 +237,11 @@ class CreateMemeFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<MainBloc>(context, listen: false);
+    final store = MainPageStore.of(context);
     return FloatingActionButton.extended(
       onPressed: () async {
         final navigator = Navigator.of(context);
-        final selectedMemePath = await bloc.selectMeme();
+        final selectedMemePath = await store.selectMeme();
         if (selectedMemePath == null) return;
         navigator.push(
           MaterialPageRoute(
@@ -166,11 +265,11 @@ class CreateTemplateFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<MainBloc>(context, listen: false);
+    final store = MainPageStore.of(context);
     return FloatingActionButton.extended(
       onPressed: () async {
         final navigator = Navigator.of(context);
-        final selectedMemePath = await bloc.selectMeme();
+        final selectedMemePath = await store.selectMeme();
         if (selectedMemePath == null) return;
         navigator.push(
           MaterialPageRoute(
@@ -192,9 +291,9 @@ class CreatedMemesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<MainBloc>(context, listen: false);
+    final store = MainPageStore.of(context);
     return StreamBuilder<List<MemeThumbnail>>(
-      stream: bloc.observeMemes(),
+      stream: store.observeMemes(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const SizedBox.shrink();
@@ -224,7 +323,7 @@ class MemeGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<MainBloc>(context, listen: false);
+    final store = MainPageStore.of(context);
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
@@ -253,7 +352,7 @@ class MemeGridItem extends StatelessWidget {
               onTap: () async {
                 final delete = await showConfirmationDeleteDialog(context);
                 if (delete == null || delete == false) return;
-                bloc.deleteMeme(memeThumbnail.memeId);
+                store.deleteMeme(memeThumbnail.memeId);
               },
               child: Container(
                 margin: const EdgeInsets.all(4),
@@ -307,9 +406,9 @@ class TemplatesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<MainBloc>(context, listen: false);
+    final store = MainPageStore.of(context);
     return StreamBuilder<List<TemplateFull>>(
-      stream: bloc.observeTemplates(),
+      stream: store.observeTemplates(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const SizedBox.shrink();
@@ -339,7 +438,7 @@ class TemplateGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<MainBloc>(context, listen: false);
+    final store = MainPageStore.of(context);
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -371,7 +470,7 @@ class TemplateGridItem extends StatelessWidget {
               onTap: () async {
                 final delete = await showConfirmationDeleteDialog(context);
                 if (delete == null || delete == false) return;
-                bloc.deleteTemplate(template.id);
+                store.deleteTemplate(template.id);
               },
               child: Container(
                 margin: const EdgeInsets.all(4),
