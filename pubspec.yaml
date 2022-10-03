@@ -16,26 +16,26 @@ dependencies:
   provider: ^6.0.3
   google_fonts: ^3.0.1
   uuid: ^3.0.6
-  json_annotation: ^4.6.0
-  equatable: ^2.0.3
-  shared_preferences: ^2.0.13
+  json_annotation: ^4.7.0
+  equatable: ^2.0.5
+  shared_preferences: ^2.0.15
   image_picker: ^0.8.5+3
-  file_picker: ^5.0.0
+  file_picker: ^5.2.0+1
   path_provider: ^2.0.11
   screenshot: ^1.2.3
-  share_plus: ^4.0.10
+  share_plus: ^4.4.0
   path: ^1.8.1
   collection: ^1.16.0
+  reactive_store:
+    git:
+      url: https://github.com/dmitrymaslovhome/reactive_store
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.1
-  json_serializable: ^6.3.1
-  build_runner: ^2.2.0
-
-dependency_overrides:
-  platform: ^3.1.0
+  json_serializable: ^6.4.1
+  build_runner: ^2.2.1
 
 flutter:
   uses-material-design: true
