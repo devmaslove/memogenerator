@@ -212,6 +212,15 @@ class _MainPageState extends State<MainPageContent>
           child: currentIndex == 0
               ? const CreateMemeFab()
               : const CreateTemplateFab(),
+          layoutBuilder: (currentChild, previousChildren) {
+            return Stack(
+              alignment: Alignment.centerRight,
+              children: [
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            );
+          },
         ),
         backgroundColor: Colors.white,
         body: TabBarView(
