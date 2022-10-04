@@ -19,18 +19,21 @@ import 'package:memogenerator/resources/app_colors.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:reactive_store/reactive_store.dart';
-import 'package:rxdart/rxdart.dart';
 
 class MainPageStore extends RStore {
-  Stream<List<MemeThumbnail>> observeMemes() =>
-      Rx.combineLatest2<List<Meme>, Directory, List<MemeThumbnail>>(
-        MemesRepository.getInstance().observeItems(),
-        getApplicationDocumentsDirectory().asStream(),
-        (memes, docsDir) {
-          return memes.map(
+  String _docsDirAbsolutePath = '';
+  List<Meme> _memes = [];
+  List<Template> _templates = [];
+
+  List<MemeThumbnail> get memesThumbnails => compose<List<MemeThumbnail>>(
+        keyName: 'memesThumbnails',
+        watch: () => [_docsDirAbsolutePath, _memes],
+        getValue: () {
+          if (_docsDirAbsolutePath.isEmpty || _memes.isEmpty) return [];
+          return _memes.map(
             (meme) {
               final fullImagePath = path.join(
-                docsDir.absolute.path,
+                _docsDirAbsolutePath,
                 '${meme.id}.png',
               );
               return MemeThumbnail(
@@ -42,15 +45,15 @@ class MainPageStore extends RStore {
         },
       );
 
-  Stream<List<TemplateFull>> observeTemplates() =>
-      Rx.combineLatest2<List<Template>, Directory, List<TemplateFull>>(
-        TemplatesRepository.getInstance().observeItems(),
-        getApplicationDocumentsDirectory().asStream(),
-        (templates, docsDir) {
-          return templates.map(
+  List<TemplateFull> get templatesThumbnails => compose<List<TemplateFull>>(
+        keyName: 'templatesThumbnails',
+        watch: () => [_docsDirAbsolutePath, _templates],
+        getValue: () {
+          if (_docsDirAbsolutePath.isEmpty || _templates.isEmpty) return [];
+          return _templates.map(
             (template) {
               final fullImagePath = path.join(
-                docsDir.absolute.path,
+                _docsDirAbsolutePath,
                 SaveTemplateInteractor.templatesPathName,
                 template.imageUrl,
               );
@@ -62,6 +65,30 @@ class MainPageStore extends RStore {
           ).toList();
         },
       );
+
+  void initStore() {
+    listenFuture<Directory>(
+      getApplicationDocumentsDirectory(),
+      id: 0,
+      onData: (docsDir) => setStore(
+        () => _docsDirAbsolutePath = docsDir.absolute.path,
+      ),
+    );
+    listenStream<List<Meme>>(
+      MemesRepository.getInstance().observeItems(),
+      id: 1,
+      onData: (memes) => setStore(
+        () => _memes = [...memes],
+      ),
+    );
+    listenStream<List<Template>>(
+      TemplatesRepository.getInstance().observeItems(),
+      id: 2,
+      onData: (templates) => setStore(
+        () => _templates = [...templates],
+      ),
+    );
+  }
 
   Future<String?> selectMeme() async {
     if (defaultTargetPlatform == TargetPlatform.macOS) {
@@ -113,7 +140,7 @@ class MainPage extends RStoreWidget<MainPageStore> {
   }
 
   @override
-  MainPageStore createRStore() => MainPageStore();
+  MainPageStore createRStore() => MainPageStore()..initStore();
 }
 
 class MainPageContent extends StatefulWidget {
@@ -291,20 +318,15 @@ class CreatedMemesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = MainPageStore.of(context);
-    return StreamBuilder<List<MemeThumbnail>>(
-      stream: store.observeMemes(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
-        }
-        final items = snapshot.requireData;
+    return RStoreContextValueBuilder<MainPageStore, List<MemeThumbnail>>(
+      watch: (store) => store.memesThumbnails,
+      builder: (context, memes, _) {
         return GridView.extent(
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           maxCrossAxisExtent: 180,
-          children: items.map((item) {
+          children: memes.map((item) {
             return MemeGridItem(memeThumbnail: item);
           }).toList(),
         );
@@ -406,14 +428,9 @@ class TemplatesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = MainPageStore.of(context);
-    return StreamBuilder<List<TemplateFull>>(
-      stream: store.observeTemplates(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
-        }
-        final templates = snapshot.requireData;
+    return RStoreContextValueBuilder<MainPageStore, List<TemplateFull>>(
+      watch: (store) => store.templatesThumbnails,
+      builder: (context, templates, _) {
         return GridView.extent(
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
