@@ -22,6 +22,7 @@ class MainPageStore extends RStore {
   String _docsDirAbsolutePath = '';
   List<Meme> _memes = [];
   List<Template> _templates = [];
+  String newMemeImagePath = '';
 
   List<MemeThumbnail> get memesThumbnails => compose<List<MemeThumbnail>>(
         keyName: 'memesThumbnails',
@@ -85,6 +86,30 @@ class MainPageStore extends RStore {
       onData: (templates) => setStore(
         () => _templates = [...templates],
       ),
+    );
+  }
+
+  void addMeme() => _pickMemeImage(true);
+
+  void addTemplate() => _pickMemeImage(false);
+
+  void _pickMemeImage(bool savePath) {
+    listenFuture<String?>(
+      PickImageInteractor.getInstance().pickImage(),
+      id: 3,
+      onData: (imagePath) {
+        if (imagePath != null) {
+          SaveTemplateInteractor.getInstance().saveTemplate(
+            imagePath: imagePath,
+          );
+        }
+        final newImagePath = imagePath ?? '';
+        if (savePath && newImagePath != newMemeImagePath) {
+          setStore(
+            () => newMemeImagePath = newImagePath,
+          );
+        }
+      },
     );
   }
 
@@ -259,22 +284,27 @@ class CreateMemeFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = MainPageStore.of(context);
-    return FloatingActionButton.extended(
-      onPressed: () async {
-        final navigator = Navigator.of(context);
-        final selectedMemePath = await store.selectMeme();
-        if (selectedMemePath == null) return;
-        navigator.push(
-          MaterialPageRoute(
-            builder: (_) => CreateMemePage(
-              selectedMemePath: selectedMemePath,
+    return RStoreValueBuilder<String>(
+      store: store,
+      watch: () => store.newMemeImagePath,
+      onChange: (context, imagePath) {
+        if (imagePath.isNotEmpty) {
+          store.setStore(() => store.newMemeImagePath = '');
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => CreateMemePage(
+                selectedMemePath: imagePath,
+              ),
             ),
-          ),
-        );
+          );
+        }
       },
-      backgroundColor: AppColors.fuchsia,
-      label: const Text("Мем"),
-      icon: const Icon(Icons.add, color: Colors.white),
+      child: FloatingActionButton.extended(
+        onPressed: () => store.addMeme(),
+        backgroundColor: AppColors.fuchsia,
+        label: const Text("Мем"),
+        icon: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 }
@@ -288,18 +318,7 @@ class CreateTemplateFab extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = MainPageStore.of(context);
     return FloatingActionButton.extended(
-      onPressed: () async {
-        final navigator = Navigator.of(context);
-        final selectedMemePath = await store.selectMeme();
-        if (selectedMemePath == null) return;
-        navigator.push(
-          MaterialPageRoute(
-            builder: (_) => CreateMemePage(
-              selectedMemePath: selectedMemePath,
-            ),
-          ),
-        );
-      },
+      onPressed: () => store.addTemplate(),
       backgroundColor: AppColors.fuchsia,
       label: const Text("Шаблон"),
       icon: const Icon(Icons.add, color: Colors.white),
