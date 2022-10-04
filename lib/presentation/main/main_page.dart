@@ -1,14 +1,12 @@
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:memogenerator/data/models/meme.dart';
 import 'package:memogenerator/data/models/template.dart';
 import 'package:memogenerator/data/repositories/memes_repository.dart';
 import 'package:memogenerator/data/repositories/templates_repository.dart';
+import 'package:memogenerator/domain/interactors/pick_image_interactor.dart';
 import 'package:memogenerator/domain/interactors/save_template_interactor.dart';
 import 'package:memogenerator/presentation/create_meme/create_meme_page.dart';
 import 'package:memogenerator/presentation/easter_egg/easter_egg_page.dart';
@@ -91,20 +89,7 @@ class MainPageStore extends RStore {
   }
 
   Future<String?> selectMeme() async {
-    if (defaultTargetPlatform == TargetPlatform.macOS) {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-      );
-      final imagePath = result?.files.single.path;
-      if (imagePath != null) {
-        await SaveTemplateInteractor.getInstance().saveTemplate(
-          imagePath: imagePath,
-        );
-      }
-      return imagePath;
-    }
-    final xFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    final imagePath = xFile?.path;
+    final imagePath = await PickImageInteractor.getInstance().pickImage();
     if (imagePath != null) {
       await SaveTemplateInteractor.getInstance().saveTemplate(
         imagePath: imagePath,
