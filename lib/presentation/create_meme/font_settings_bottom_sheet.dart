@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:memogenerator/presentation/create_meme/create_meme_bloc.dart';
 import 'package:memogenerator/presentation/create_meme/meme_text_on_canvas.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
 import 'package:memogenerator/presentation/widgets/app_button.dart';
 import 'package:memogenerator/resources/app_colors.dart';
-import 'package:provider/provider.dart';
 
 class FontSettingBottomSheet extends StatefulWidget {
   final MemeText memeText;
+  final void Function(
+    Color color,
+    double fontSize,
+    FontWeight fontWeight,
+  ) onChangeFontSettings;
 
   const FontSettingBottomSheet({
     Key? key,
     required this.memeText,
+    required this.onChangeFontSettings,
   }) : super(key: key);
 
   @override
@@ -33,7 +37,6 @@ class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -91,8 +94,7 @@ class _FontSettingBottomSheetState extends State<FontSettingBottomSheet> {
         const SizedBox(height: 16),
         Buttons(
           onPositiveButtonAction: () {
-            bloc.changeFontSettings(
-              widget.memeText.id,
+            widget.onChangeFontSettings(
               color,
               fontSize,
               fontWeight,

@@ -1,87 +1,392 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:memogenerator/presentation/create_meme/create_meme_bloc.dart';
+import 'package:memogenerator/data/models/meme.dart';
+import 'package:memogenerator/data/models/position.dart';
+import 'package:memogenerator/data/models/text_with_position.dart';
+import 'package:memogenerator/data/repositories/memes_repository.dart';
+import 'package:memogenerator/domain/interactors/save_meme_interactor.dart';
+import 'package:memogenerator/domain/interactors/screenshot_interactor.dart';
 import 'package:memogenerator/presentation/create_meme/font_settings_bottom_sheet.dart';
 import 'package:memogenerator/presentation/create_meme/meme_text_on_canvas.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text.dart';
+import 'package:memogenerator/presentation/create_meme/models/meme_text_offset.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text_with_offset.dart';
 import 'package:memogenerator/presentation/create_meme/models/meme_text_with_selection.dart';
 import 'package:memogenerator/presentation/widgets/app_button.dart';
 import 'package:memogenerator/resources/app_colors.dart';
-import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:reactive_store/reactive_store.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:uuid/uuid.dart';
 
-class CreateMemePage extends StatefulWidget {
-  final String? id;
-  final String? selectedMemePath;
+class CreateMemePageStore extends RStore {
+  final memeTextsSubject = BehaviorSubject<List<MemeText>>.seeded(<MemeText>[]);
+  final selectedMemeTextSubject = BehaviorSubject<MemeText?>.seeded(null);
+  final memeTextOffsetsSubject =
+      BehaviorSubject<List<MemeTextOffset>>.seeded(<MemeTextOffset>[]);
+  final newMemeTextOffsetSubject =
+      BehaviorSubject<MemeTextOffset?>.seeded(null);
+  final memePathSubject = BehaviorSubject<String?>.seeded(null);
+  final screenshotControllerSubject =
+      BehaviorSubject<ScreenshotController>.seeded(ScreenshotController());
 
-  const CreateMemePage({
-    Key? key,
-    this.id,
-    this.selectedMemePath,
-  }) : super(key: key);
+  StreamSubscription<MemeTextOffset?>? newMemeTextOffsetSubscription;
+  StreamSubscription<bool>? saveMemeSubscription;
+  StreamSubscription<Meme?>? existentMemeSubscription;
+  StreamSubscription<void>? shareMemeSubscription;
 
-  @override
-  State<CreateMemePage> createState() => _CreateMemePageState();
-}
+  final String id;
+  bool _changed = true;
 
-class _CreateMemePageState extends State<CreateMemePage> {
-  late CreateMemeBloc bloc;
+  CreateMemePageStore({
+    final String? id,
+    final String? selectedMemePath,
+  }) : id = id ?? Uuid().v4() {
+    print('Got id: ${this.id}');
+    memePathSubject.add(selectedMemePath);
+    _subscribeToNewMemeTextOffset();
+    _subscribeToExistentMeme();
+  }
 
-  @override
-  void initState() {
-    super.initState();
-    bloc = CreateMemeBloc(
-      id: widget.id,
-      selectedMemePath: widget.selectedMemePath,
+  void _subscribeToExistentMeme() {
+    existentMemeSubscription =
+        MemesRepository.getInstance().getItemById(id).asStream().listen(
+      (meme) {
+        if (meme != null) {
+          final memeText = meme.texts
+              .map(
+                (textWithPosition) =>
+                    MemeText.createFromTextWithPosition(textWithPosition),
+              )
+              .toList();
+          final memeTextOffsets = meme.texts
+              .map(
+                (textWithPosition) => MemeTextOffset(
+                  id: textWithPosition.id,
+                  offset: Offset(
+                    textWithPosition.position.left,
+                    textWithPosition.position.top,
+                  ),
+                ),
+              )
+              .toList();
+          memeTextsSubject.add(memeText);
+          memeTextOffsetsSubject.add(memeTextOffsets);
+          if (meme.memePath != null) {
+            getApplicationDocumentsDirectory().then((docsDirectory) {
+              final onlyImageName =
+                  meme.memePath!.split(Platform.pathSeparator).last;
+              final fullImagePath =
+                  "${docsDirectory.absolute.path}${Platform.pathSeparator}${SaveMemeInteractor.memesPathName}${Platform.pathSeparator}$onlyImageName";
+              memePathSubject.add(fullImagePath);
+            });
+          } else {
+            memePathSubject.add(meme.memePath);
+          }
+          _changed = false;
+        }
+      },
+      onError: (error, stackTrace) =>
+          print("Error in existentMemeSubscription: $error, $stackTrace"),
+    );
+  }
+
+  bool isNeedSave() => _changed;
+
+  Future<bool> isAllSaved() async {
+    final savedMeme = await MemesRepository.getInstance().getItemById(id);
+    if (savedMeme == null) return false;
+    final savedMemeText = savedMeme.texts
+        .map(
+          (textWithPosition) =>
+              MemeText.createFromTextWithPosition(textWithPosition),
+        )
+        .toList();
+    final savedMemeTextOffsets = savedMeme.texts
+        .map(
+          (textWithPosition) => MemeTextOffset(
+            id: textWithPosition.id,
+            offset: Offset(
+              textWithPosition.position.left,
+              textWithPosition.position.top,
+            ),
+          ),
+        )
+        .toList();
+    return const DeepCollectionEquality.unordered()
+            .equals(savedMemeText, memeTextsSubject.value) &&
+        const DeepCollectionEquality.unordered()
+            .equals(savedMemeTextOffsets, memeTextOffsetsSubject.value);
+  }
+
+  void changeFontSettings(
+    final String textId,
+    final Color color,
+    final double fontSize,
+    final FontWeight fontWeight,
+  ) {
+    final copiedList = [...memeTextsSubject.value];
+    int index = copiedList.indexWhere((memeText) => memeText.id == textId);
+    if (index != -1) {
+      final oldMemeText = copiedList[index];
+      copiedList.removeAt(index);
+      copiedList.insert(
+        index,
+        oldMemeText.copyWithChangedFontSettings(
+          color,
+          fontSize,
+          fontWeight,
+        ),
+      );
+      memeTextsSubject.add(copiedList);
+      _changed = true;
+    }
+  }
+
+  void shareMeme() {
+    shareMemeSubscription?.cancel();
+    shareMemeSubscription = ScreenshotInteractor.getInstance()
+        .shareScreenshot(screenshotControllerSubject.value)
+        .asStream()
+        .listen(
+          (event) {},
+          onError: (error, stackTrace) =>
+              print("Error in shareMemeSubscription: $error, $stackTrace"),
+        );
+  }
+
+  void saveMeme() {
+    final memeTexts = memeTextsSubject.value;
+    final memeTextsOffsets = memeTextOffsetsSubject.value;
+    final texts = memeTexts.map((memeText) {
+      final memeTextPosition = memeTextsOffsets.firstWhereOrNull(
+          (memeTextsOffset) => memeTextsOffset.id == memeText.id);
+      final position = Position(
+        top: memeTextPosition?.offset.dy ?? 0,
+        left: memeTextPosition?.offset.dx ?? 0,
+      );
+      return TextWithPosition(
+        id: memeText.id,
+        text: memeText.text,
+        position: position,
+        fontSize: memeText.fontSize,
+        fontWeight: memeText.fontWeight,
+        color: memeText.color,
+      );
+    }).toList();
+    saveMemeSubscription?.cancel();
+    saveMemeSubscription = SaveMemeInteractor.getInstance()
+        .saveMeme(
+          id: id,
+          screenshotController: screenshotControllerSubject.value,
+          textWithPositions: texts,
+          imagePath: memePathSubject.value,
+        )
+        .asStream()
+        .listen(
+      (saved) {
+        _changed = false;
+        print("Meme saved: $saved");
+      },
+      onError: (error, stackTrace) =>
+          print("Error in saveMemeSubscription: $error, $stackTrace"),
+    );
+  }
+
+  void _subscribeToNewMemeTextOffset() {
+    newMemeTextOffsetSubscription = newMemeTextOffsetSubject
+        .debounceTime(const Duration(milliseconds: 300))
+        .listen(
+      (value) {
+        if (value != null) _changeMemeTextOffsetInternal(value);
+      },
+      onError: (error, stackTrace) =>
+          print("Error in newMemeTextOffsetSubscription: $error, $stackTrace"),
+    );
+  }
+
+  void changeMemeTextOffset(final String id, final Offset offset) {
+    newMemeTextOffsetSubject.add(MemeTextOffset(id: id, offset: offset));
+    _changed = true;
+  }
+
+  void _changeMemeTextOffsetInternal(final MemeTextOffset newMemeTextOffset) {
+    final copiedMemeTextOffset = [...memeTextOffsetsSubject.value];
+    final currentMemeTextOffset = copiedMemeTextOffset.firstWhereOrNull(
+        (memeTextOffset) => memeTextOffset.id == newMemeTextOffset.id);
+    if (currentMemeTextOffset != null) {
+      copiedMemeTextOffset.remove(currentMemeTextOffset);
+    }
+    copiedMemeTextOffset.add(newMemeTextOffset);
+    memeTextOffsetsSubject.add(copiedMemeTextOffset);
+  }
+
+  void addNewText() {
+    final newMemeText = MemeText.create();
+    memeTextsSubject.add([...memeTextsSubject.value, newMemeText]);
+    selectedMemeTextSubject.add(newMemeText);
+    _changed = true;
+  }
+
+  void changeMemText(final String id, final String text) {
+    final copiedList = [...memeTextsSubject.value];
+    int index = copiedList.indexWhere((memeText) => memeText.id == id);
+    if (index != -1) {
+      final oldMemeText = copiedList[index];
+      copiedList.removeAt(index);
+      copiedList.insert(
+        index,
+        oldMemeText.copyWithChangedText(text),
+      );
+      memeTextsSubject.add(copiedList);
+      _changed = true;
+    }
+  }
+
+  void deleteMemeText(final String textId) {
+    final copiedList = [...memeTextsSubject.value];
+    int index = copiedList.indexWhere((memeText) => memeText.id == textId);
+    if (index != -1) {
+      if (selectedMemeTextSubject.value != null &&
+          selectedMemeTextSubject.value!.id == textId) {
+        deselectMemText();
+      }
+      copiedList.removeAt(index);
+      memeTextsSubject.add(copiedList);
+      _changed = true;
+    }
+  }
+
+  void selectMemText(final String id) {
+    final foundMemText =
+        memeTextsSubject.value.firstWhereOrNull((element) => element.id == id);
+    selectedMemeTextSubject.add(foundMemText);
+  }
+
+  void deselectMemText() {
+    selectedMemeTextSubject.add(null);
+  }
+
+  Stream<String?> observeMemePath() => memePathSubject.distinct();
+
+  Stream<List<MemeText>> observeMemeTexts() =>
+      memeTextsSubject.distinct((prev, next) => listEquals(prev, next));
+
+  Stream<List<MemeTextWithOffset>> observeMemeTextWhitOffsets() =>
+      Rx.combineLatest2<List<MemeText>, List<MemeTextOffset>,
+              List<MemeTextWithOffset>>(
+          observeMemeTexts(), memeTextOffsetsSubject.distinct(),
+          (memeTexts, memeTextsOffsets) {
+        return memeTexts.map((memeText) {
+          final memeTextsOffset = memeTextsOffsets
+              .firstWhereOrNull((element) => element.id == memeText.id);
+          return MemeTextWithOffset(
+              memeText: memeText, offset: memeTextsOffset?.offset);
+        }).toList();
+      }).distinct((prev, next) => listEquals(prev, next));
+
+  Stream<MemeText?> observeSelectedMemText() =>
+      selectedMemeTextSubject.distinct();
+
+  Stream<ScreenshotController> observeScreenshotController() =>
+      screenshotControllerSubject.distinct();
+
+  Stream<List<MemeTextWithSelection>> observeMemeTextsWithSelection() {
+    return Rx.combineLatest2<List<MemeText>, MemeText?,
+        List<MemeTextWithSelection>>(
+      observeMemeTexts(),
+      observeSelectedMemText(),
+      (memTexts, selectedMem) => memTexts
+          .map(
+            (memeText) => MemeTextWithSelection(
+              memeText: memeText,
+              selected: memeText.id == selectedMem?.id,
+            ),
+          )
+          .toList(),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Provider.value(
-      value: bloc,
-      child: WillPopScope(
-        onWillPop: () async {
-          if (bloc.isNeedSave()) {
-            final goBack = await showConfirmationExitDialog(context);
-            return goBack ?? false;
-          }
-          return true;
-        },
-        child: Scaffold(
-          resizeToAvoidBottomInset: false,
-          appBar: AppBar(
-            backgroundColor: AppColors.lemon,
-            foregroundColor: AppColors.darkGrey,
-            title: const Text("Создаём мем"),
-            bottom: const EditTextBar(),
-            actions: [
-              AnimatedIconButton(
-                onTap: () => bloc.shareMeme(),
-                icon: Icons.share,
-              ),
-              AnimatedIconButton(
-                onTap: () => bloc.saveMeme(),
-                icon: Icons.save,
-              ),
-            ],
-          ),
-          backgroundColor: Colors.white,
-          body: const SafeArea(
-            child: CreateMemePageContent(),
-          ),
+  void dispose() {
+    super.dispose();
+    memeTextsSubject.close();
+    selectedMemeTextSubject.close();
+    memeTextOffsetsSubject.close();
+    newMemeTextOffsetSubject.close();
+    memePathSubject.close();
+    screenshotControllerSubject.close();
+
+    newMemeTextOffsetSubscription?.cancel();
+    saveMemeSubscription?.cancel();
+    existentMemeSubscription?.cancel();
+    shareMemeSubscription?.cancel();
+  }
+
+  @override
+  CreateMemePage get widget => super.widget as CreateMemePage;
+
+  static CreateMemePageStore of(BuildContext context) {
+    return RStoreWidget.store<CreateMemePageStore>(context);
+  }
+}
+
+class CreateMemePage extends RStoreWidget<CreateMemePageStore> {
+  final String? id;
+  final String? selectedMemePath;
+
+  const CreateMemePage({
+    super.key,
+    this.id,
+    this.selectedMemePath,
+  });
+
+  @override
+  Widget build(BuildContext context, CreateMemePageStore store) {
+    return WillPopScope(
+      onWillPop: () async {
+        if (store.isNeedSave()) {
+          final goBack = await showConfirmationExitDialog(context);
+          return goBack ?? false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          backgroundColor: AppColors.lemon,
+          foregroundColor: AppColors.darkGrey,
+          title: const Text("Создаём мем"),
+          bottom: const EditTextBar(),
+          actions: [
+            AnimatedIconButton(
+              onTap: () => store.shareMeme(),
+              icon: Icons.share,
+            ),
+            AnimatedIconButton(
+              onTap: () => store.saveMeme(),
+              icon: Icons.save,
+            ),
+          ],
+        ),
+        backgroundColor: Colors.white,
+        body: const SafeArea(
+          child: CreateMemePageContent(),
         ),
       ),
     );
   }
 
   @override
-  void dispose() {
-    bloc.dispose();
-    super.dispose();
-  }
+  CreateMemePageStore createRStore() => CreateMemePageStore(
+        id: id,
+        selectedMemePath: selectedMemePath,
+      );
 
   Future<bool?> showConfirmationExitDialog(BuildContext context) {
     return showDialog(
@@ -167,11 +472,11 @@ class _EditTextBarState extends State<EditTextBar> {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    final store = CreateMemePageStore.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
       child: StreamBuilder<MemeText?>(
-          stream: bloc.observeSelectedMemText(),
+          stream: store.observeSelectedMemText(),
           builder: (context, snapshot) {
             final MemeText? selectedMemeText = snapshot.data;
             if (selectedMemeText?.text != controller.text) {
@@ -187,10 +492,10 @@ class _EditTextBarState extends State<EditTextBar> {
               controller: controller,
               onChanged: (text) {
                 if (isHaveSelectedText) {
-                  bloc.changeMemText(selectedMemeText.id, text);
+                  store.changeMemText(selectedMemeText.id, text);
                 }
               },
-              onEditingComplete: () => bloc.deselectMemText(),
+              onEditingComplete: () => store.deselectMemText(),
               decoration: InputDecoration(
                 hintText: isHaveSelectedText ? "Ввести текст" : null,
                 hintStyle: TextStyle(
@@ -254,12 +559,12 @@ class BottomList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    final store = CreateMemePageStore.of(context);
     return Container(
       color: Colors.white,
       child: StreamBuilder<List<MemeTextWithSelection>>(
           initialData: const <MemeTextWithSelection>[],
-          stream: bloc.observeMemeTextsWithSelection(),
+          stream: store.observeMemeTextsWithSelection(),
           builder: (context, snapshot) {
             final items = snapshot.hasData
                 ? snapshot.data!
@@ -268,7 +573,11 @@ class BottomList extends StatelessWidget {
                 itemCount: items.length + 1,
                 separatorBuilder: (BuildContext context, int index) {
                   if (index == 0) return const SizedBox.shrink();
-                  return const BottomSeparator();
+                  return Container(
+                    height: 1,
+                    margin: const EdgeInsets.only(left: 16),
+                    color: AppColors.darkGrey,
+                  );
                 },
                 itemBuilder: (BuildContext context, int index) {
                   if (index == 0) {
@@ -276,7 +585,7 @@ class BottomList extends StatelessWidget {
                       padding: const EdgeInsets.all(12),
                       child: Center(
                         child: AppButton(
-                          onTap: () => bloc.addNewText(),
+                          onTap: () => store.addNewText(),
                           text: "Добавить текст",
                           color: AppColors.fuchsia,
                           icon: Icons.add,
@@ -292,35 +601,20 @@ class BottomList extends StatelessWidget {
   }
 }
 
-class BottomSeparator extends StatelessWidget {
-  const BottomSeparator({
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 1,
-      margin: const EdgeInsets.only(left: 16),
-      color: AppColors.darkGrey,
-    );
-  }
-}
-
 class BottomMemeText extends StatelessWidget {
-  const BottomMemeText({
-    Key? key,
-    required this.item,
-  }) : super(key: key);
-
   final MemeTextWithSelection item;
 
+  const BottomMemeText({
+    super.key,
+    required this.item,
+  });
+
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    final store = CreateMemePageStore.of(context);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => bloc.selectMemText(item.memeText.id),
+      onTap: () => store.selectMemText(item.memeText.id),
       child: Container(
         height: 48,
         alignment: Alignment.centerLeft,
@@ -351,16 +645,26 @@ class BottomMemeText extends StatelessWidget {
                       ),
                     ),
                     builder: (context) {
-                      return Provider.value(
-                        value: bloc,
-                        child: FontSettingBottomSheet(memeText: item.memeText),
-                      );
+                      return FontSettingBottomSheet(
+                          memeText: item.memeText,
+                          onChangeFontSettings: (
+                            Color color,
+                            double fontSize,
+                            FontWeight fontWeight,
+                          ) {
+                            store.changeFontSettings(
+                              item.memeText.id,
+                              color,
+                              fontSize,
+                              fontWeight,
+                            );
+                          });
                     });
               },
             ),
             BottomMemeTextAction(
               iconData: Icons.delete_forever_outlined,
-              onTap: () => bloc.deleteMemeText(item.memeText.id),
+              onTap: () => store.deleteMemeText(item.memeText.id),
             ),
             const SizedBox(width: 4),
           ],
@@ -375,10 +679,10 @@ class BottomMemeTextAction extends StatelessWidget {
   final VoidCallback onTap;
 
   const BottomMemeTextAction({
-    Key? key,
+    super.key,
     required this.iconData,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -393,13 +697,11 @@ class BottomMemeTextAction extends StatelessWidget {
 }
 
 class MemeCanvasWidget extends StatelessWidget {
-  const MemeCanvasWidget({
-    Key? key,
-  }) : super(key: key);
+  const MemeCanvasWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    final store = CreateMemePageStore.of(context);
     return Container(
       padding: const EdgeInsets.all(8),
       color: AppColors.darkGrey38,
@@ -407,9 +709,9 @@ class MemeCanvasWidget extends StatelessWidget {
       child: AspectRatio(
         aspectRatio: 1.0,
         child: GestureDetector(
-          onTap: () => bloc.deselectMemText(),
+          onTap: () => store.deselectMemText(),
           child: StreamBuilder<ScreenshotController>(
-            stream: bloc.observeScreenshotController(),
+            stream: store.observeScreenshotController(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) return const SizedBox.shrink();
               return Screenshot(
@@ -430,29 +732,28 @@ class MemeCanvasWidget extends StatelessWidget {
 }
 
 class MemeTexts extends StatelessWidget {
-  const MemeTexts({
-    Key? key,
-  }) : super(key: key);
+  const MemeTexts({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    final store = CreateMemePageStore.of(context);
     return StreamBuilder<List<MemeTextWithOffset>>(
       initialData: const [],
-      stream: bloc.observeMemeTextWhitOffsets(),
+      stream: store.observeMemeTextWhitOffsets(),
       builder: (context, snapshot) {
         final memeTextsWithOffsets =
             snapshot.hasData ? snapshot.data! : const <MemeTextWithOffset>[];
         return LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             return Stack(
-                children: memeTextsWithOffsets.map((memeTextWithOffset) {
-              return DraggableMemeText(
-                key: ValueKey(memeTextWithOffset.memeText.id),
-                memeTextWithOffset: memeTextWithOffset,
-                parentConstraints: constraints,
-              );
-            }).toList());
+              children: memeTextsWithOffsets.map((memeTextWithOffset) {
+                return DraggableMemeText(
+                  key: ValueKey(memeTextWithOffset.memeText.id),
+                  memeTextWithOffset: memeTextWithOffset,
+                  parentConstraints: constraints,
+                );
+              }).toList(),
+            );
           },
         );
       },
@@ -461,15 +762,13 @@ class MemeTexts extends StatelessWidget {
 }
 
 class BackgroundImage extends StatelessWidget {
-  const BackgroundImage({
-    Key? key,
-  }) : super(key: key);
+  const BackgroundImage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    final store = CreateMemePageStore.of(context);
     return StreamBuilder<String?>(
-        stream: bloc.observeMemePath(),
+        stream: store.observeMemePath(),
         builder: (context, snapshot) {
           final path = snapshot.data;
           if (path == null) {
@@ -487,10 +786,10 @@ class DraggableMemeText extends StatefulWidget {
   final BoxConstraints parentConstraints;
 
   const DraggableMemeText({
-    Key? key,
+    super.key,
     required this.memeTextWithOffset,
     required this.parentConstraints,
-  }) : super(key: key);
+  });
 
   @override
   State<DraggableMemeText> createState() => _DraggableMemeTextState();
@@ -511,8 +810,8 @@ class _DraggableMemeTextState extends State<DraggableMemeText> {
     //
     if (widget.memeTextWithOffset.offset == null) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
-        bloc.changeMemeTextOffset(
+        final store = CreateMemePageStore.of(context);
+        store.changeMemeTextOffset(
           widget.memeTextWithOffset.memeText.id,
           Offset(left, top),
         );
@@ -522,26 +821,26 @@ class _DraggableMemeTextState extends State<DraggableMemeText> {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = Provider.of<CreateMemeBloc>(context, listen: false);
+    final store = CreateMemePageStore.of(context);
     return Positioned(
       top: top,
       left: left,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onPanUpdate: (details) {
-          bloc.selectMemText(widget.memeTextWithOffset.memeText.id);
+          store.selectMemText(widget.memeTextWithOffset.memeText.id);
           setState(() {
             left = calculateLeft(details);
             top = calculateTop(details);
-            bloc.changeMemeTextOffset(
+            store.changeMemeTextOffset(
               widget.memeTextWithOffset.memeText.id,
               Offset(left, top),
             );
           });
         },
-        onTap: () => bloc.selectMemText(widget.memeTextWithOffset.memeText.id),
+        onTap: () => store.selectMemText(widget.memeTextWithOffset.memeText.id),
         child: StreamBuilder<MemeText?>(
-            stream: bloc.observeSelectedMemText(),
+            stream: store.observeSelectedMemText(),
             builder: (context, snapshot) {
               final selected =
                   widget.memeTextWithOffset.memeText.id == snapshot.data?.id;
