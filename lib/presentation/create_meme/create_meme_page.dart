@@ -46,8 +46,10 @@ class CreateMemePageStore extends RStore {
   CreateMemePageStore({
     final String? id,
     final String? selectedMemePath,
-  }) : id = id ?? Uuid().v4() {
-    print('Got id: ${this.id}');
+  }) : id = id ?? const Uuid().v4() {
+    if (kDebugMode) {
+      print('Got id: ${this.id}');
+    }
     memePathSubject.add(selectedMemePath);
     _subscribeToNewMemeTextOffset();
     _subscribeToExistentMeme();
@@ -91,8 +93,11 @@ class CreateMemePageStore extends RStore {
           _changed = false;
         }
       },
-      onError: (error, stackTrace) =>
-          print("Error in existentMemeSubscription: $error, $stackTrace"),
+      onError: (error, stackTrace) {
+        if (kDebugMode) {
+          print("Error in existentMemeSubscription: $error, $stackTrace");
+        }
+      },
     );
   }
 
@@ -154,10 +159,13 @@ class CreateMemePageStore extends RStore {
         .shareScreenshot(screenshotControllerSubject.value)
         .asStream()
         .listen(
-          (event) {},
-          onError: (error, stackTrace) =>
-              print("Error in shareMemeSubscription: $error, $stackTrace"),
-        );
+      (event) {},
+      onError: (error, stackTrace) {
+        if (kDebugMode) {
+          print("Error in shareMemeSubscription: $error, $stackTrace");
+        }
+      },
+    );
   }
 
   void saveMeme() {
@@ -191,10 +199,15 @@ class CreateMemePageStore extends RStore {
         .listen(
       (saved) {
         _changed = false;
-        print("Meme saved: $saved");
+        if (kDebugMode) {
+          print("Meme saved: $saved");
+        }
       },
-      onError: (error, stackTrace) =>
-          print("Error in saveMemeSubscription: $error, $stackTrace"),
+      onError: (error, stackTrace) {
+        if (kDebugMode) {
+          print("Error in saveMemeSubscription: $error, $stackTrace");
+        }
+      },
     );
   }
 
@@ -205,8 +218,11 @@ class CreateMemePageStore extends RStore {
       (value) {
         if (value != null) _changeMemeTextOffsetInternal(value);
       },
-      onError: (error, stackTrace) =>
-          print("Error in newMemeTextOffsetSubscription: $error, $stackTrace"),
+      onError: (error, stackTrace) {
+        if (kDebugMode) {
+          print("Error in newMemeTextOffsetSubscription: $error, $stackTrace");
+        }
+      },
     );
   }
 
