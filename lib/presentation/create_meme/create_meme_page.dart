@@ -64,9 +64,6 @@ class CreateMemePageStore extends RStore {
       MemesRepository.getInstance().getItemById(_id),
       id: _subscribeIdLoadMemeFromRepository,
       onData: (meme) {
-        if (kDebugMode) {
-          print('getItemById: $_id, meme: $meme');
-        }
         if (meme != null) {
           final memeText = meme.texts
               .map(
@@ -93,7 +90,6 @@ class CreateMemePageStore extends RStore {
                   meme.memePath!.split(Platform.pathSeparator).last;
               final fullImagePath =
                   "${docsDirectory.absolute.path}${Platform.pathSeparator}${SaveMemeInteractor.memesPathName}${Platform.pathSeparator}$onlyImageName";
-              print('fullImagePath = $fullImagePath');
               setStore(() => memePath = fullImagePath);
             });
           }
@@ -788,7 +784,6 @@ class BackgroundImage extends StatelessWidget {
     return RStoreContextValueBuilder<CreateMemePageStore, String>(
       watch: (store) => store.memePath,
       builder: (context, path, _) {
-        print('RStoreContextValueBuilder path = $path');
         if (path.isEmpty) {
           return Container(
             color: Colors.white,
