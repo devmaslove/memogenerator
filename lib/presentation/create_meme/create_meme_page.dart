@@ -25,40 +25,48 @@ import 'package:screenshot/screenshot.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateMemePageStore extends RStore {
+  static const _subscribeIdLoadMemeFromRepository = 1;
+
   final memeTextsSubject = BehaviorSubject<List<MemeText>>.seeded(<MemeText>[]);
   final selectedMemeTextSubject = BehaviorSubject<MemeText?>.seeded(null);
   final memeTextOffsetsSubject =
       BehaviorSubject<List<MemeTextOffset>>.seeded(<MemeTextOffset>[]);
   final newMemeTextOffsetSubject =
       BehaviorSubject<MemeTextOffset?>.seeded(null);
-  final memePathSubject = BehaviorSubject<String?>.seeded(null);
   final screenshotControllerSubject =
       BehaviorSubject<ScreenshotController>.seeded(ScreenshotController());
 
   StreamSubscription<MemeTextOffset?>? newMemeTextOffsetSubscription;
   StreamSubscription<bool>? saveMemeSubscription;
-  StreamSubscription<Meme?>? existentMemeSubscription;
   StreamSubscription<void>? shareMemeSubscription;
 
-  final String id;
+  final String _id;
   bool _changed = true;
+  String memePath;
 
   CreateMemePageStore({
     final String? id,
     final String? selectedMemePath,
-  }) : id = id ?? const Uuid().v4() {
+  })  : _id = id ?? const Uuid().v4(),
+        memePath = selectedMemePath ?? '' {
     if (kDebugMode) {
-      print('Got id: ${this.id}');
+      print('Got id: $id, memePath: $selectedMemePath');
     }
-    memePathSubject.add(selectedMemePath);
     _subscribeToNewMemeTextOffset();
-    _subscribeToExistentMeme();
+    if (id != null) {
+      // загружаем данные из сторы
+      _loadMemeFromRepository();
+    }
   }
 
-  void _subscribeToExistentMeme() {
-    existentMemeSubscription =
-        MemesRepository.getInstance().getItemById(id).asStream().listen(
-      (meme) {
+  void _loadMemeFromRepository() {
+    listenFuture<Meme?>(
+      MemesRepository.getInstance().getItemById(_id),
+      id: _subscribeIdLoadMemeFromRepository,
+      onData: (meme) {
+        if (kDebugMode) {
+          print('getItemById: $_id, meme: $meme');
+        }
         if (meme != null) {
           final memeText = meme.texts
               .map(
@@ -85,17 +93,16 @@ class CreateMemePageStore extends RStore {
                   meme.memePath!.split(Platform.pathSeparator).last;
               final fullImagePath =
                   "${docsDirectory.absolute.path}${Platform.pathSeparator}${SaveMemeInteractor.memesPathName}${Platform.pathSeparator}$onlyImageName";
-              memePathSubject.add(fullImagePath);
+              print('fullImagePath = $fullImagePath');
+              setStore(() => memePath = fullImagePath);
             });
-          } else {
-            memePathSubject.add(meme.memePath);
           }
           _changed = false;
         }
       },
       onError: (error, stackTrace) {
         if (kDebugMode) {
-          print("Error in existentMemeSubscription: $error, $stackTrace");
+          print("Error in _loadMemeFromRepository: $error, $stackTrace");
         }
       },
     );
@@ -104,7 +111,7 @@ class CreateMemePageStore extends RStore {
   bool isNeedSave() => _changed;
 
   Future<bool> isAllSaved() async {
-    final savedMeme = await MemesRepository.getInstance().getItemById(id);
+    final savedMeme = await MemesRepository.getInstance().getItemById(_id);
     if (savedMeme == null) return false;
     final savedMemeText = savedMeme.texts
         .map(
@@ -190,10 +197,10 @@ class CreateMemePageStore extends RStore {
     saveMemeSubscription?.cancel();
     saveMemeSubscription = SaveMemeInteractor.getInstance()
         .saveMeme(
-          id: id,
+          id: _id,
           screenshotController: screenshotControllerSubject.value,
           textWithPositions: texts,
-          imagePath: memePathSubject.value,
+          imagePath: memePath,
         )
         .asStream()
         .listen(
@@ -288,8 +295,6 @@ class CreateMemePageStore extends RStore {
     selectedMemeTextSubject.add(null);
   }
 
-  Stream<String?> observeMemePath() => memePathSubject.distinct();
-
   Stream<List<MemeText>> observeMemeTexts() =>
       memeTextsSubject.distinct((prev, next) => listEquals(prev, next));
 
@@ -335,12 +340,10 @@ class CreateMemePageStore extends RStore {
     selectedMemeTextSubject.close();
     memeTextOffsetsSubject.close();
     newMemeTextOffsetSubject.close();
-    memePathSubject.close();
     screenshotControllerSubject.close();
 
     newMemeTextOffsetSubscription?.cancel();
     saveMemeSubscription?.cancel();
-    existentMemeSubscription?.cancel();
     shareMemeSubscription?.cancel();
   }
 
@@ -782,18 +785,18 @@ class BackgroundImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = CreateMemePageStore.of(context);
-    return StreamBuilder<String?>(
-        stream: store.observeMemePath(),
-        builder: (context, snapshot) {
-          final path = snapshot.data;
-          if (path == null) {
-            return Container(
-              color: Colors.white,
-            );
-          }
-          return Image.file(File(path));
-        });
+    return RStoreContextValueBuilder<CreateMemePageStore, String>(
+      watch: (store) => store.memePath,
+      builder: (context, path, _) {
+        print('RStoreContextValueBuilder path = $path');
+        if (path.isEmpty) {
+          return Container(
+            color: Colors.white,
+          );
+        }
+        return Image.file(File(path));
+      },
+    );
   }
 }
 
