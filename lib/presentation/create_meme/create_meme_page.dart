@@ -26,6 +26,7 @@ import 'package:uuid/uuid.dart';
 
 class CreateMemePageStore extends RStore {
   static const _subscribeIdLoadMemeFromRepository = 1;
+  static const _subscribeShareMeme = 2;
 
   final memeTextsSubject = BehaviorSubject<List<MemeText>>.seeded(<MemeText>[]);
   final selectedMemeTextSubject = BehaviorSubject<MemeText?>.seeded(null);
@@ -38,7 +39,6 @@ class CreateMemePageStore extends RStore {
 
   StreamSubscription<MemeTextOffset?>? newMemeTextOffsetSubscription;
   StreamSubscription<bool>? saveMemeSubscription;
-  StreamSubscription<void>? shareMemeSubscription;
 
   final String _id;
   bool _changed = true;
@@ -106,32 +106,6 @@ class CreateMemePageStore extends RStore {
 
   bool isNeedSave() => _changed;
 
-  Future<bool> isAllSaved() async {
-    final savedMeme = await MemesRepository.getInstance().getItemById(_id);
-    if (savedMeme == null) return false;
-    final savedMemeText = savedMeme.texts
-        .map(
-          (textWithPosition) =>
-              MemeText.createFromTextWithPosition(textWithPosition),
-        )
-        .toList();
-    final savedMemeTextOffsets = savedMeme.texts
-        .map(
-          (textWithPosition) => MemeTextOffset(
-            id: textWithPosition.id,
-            offset: Offset(
-              textWithPosition.position.left,
-              textWithPosition.position.top,
-            ),
-          ),
-        )
-        .toList();
-    return const DeepCollectionEquality.unordered()
-            .equals(savedMemeText, memeTextsSubject.value) &&
-        const DeepCollectionEquality.unordered()
-            .equals(savedMemeTextOffsets, memeTextOffsetsSubject.value);
-  }
-
   void changeFontSettings(
     final String textId,
     final Color color,
@@ -157,12 +131,11 @@ class CreateMemePageStore extends RStore {
   }
 
   void shareMeme() {
-    shareMemeSubscription?.cancel();
-    shareMemeSubscription = ScreenshotInteractor.getInstance()
-        .shareScreenshot(screenshotControllerSubject.value)
-        .asStream()
-        .listen(
-      (event) {},
+    listenFuture<void>(
+      ScreenshotInteractor.getInstance()
+          .shareScreenshot(screenshotControllerSubject.value),
+      id: _subscribeShareMeme,
+      onData: (_) {},
       onError: (error, stackTrace) {
         if (kDebugMode) {
           print("Error in shareMemeSubscription: $error, $stackTrace");
@@ -340,7 +313,6 @@ class CreateMemePageStore extends RStore {
 
     newMemeTextOffsetSubscription?.cancel();
     saveMemeSubscription?.cancel();
-    shareMemeSubscription?.cancel();
   }
 
   @override
