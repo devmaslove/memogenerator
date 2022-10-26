@@ -19,9 +19,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:reactive_store/reactive_store.dart';
 
 class MainPageStore extends RStore {
-  String _docsDirAbsolutePath = '';
-  List<Meme> _memes = [];
-  List<Template> _templates = [];
   String newMemeImagePath = '';
 
   List<MemeThumbnail> get memesThumbnails => compose<List<MemeThumbnail>>(
@@ -44,15 +41,15 @@ class MainPageStore extends RStore {
         },
       );
 
-  List<TemplateFull> get templatesThumbnails => compose<List<TemplateFull>>(
-        keyName: 'templatesThumbnails',
-        watch: () => [_docsDirAbsolutePath, _templates],
-        getValue: () {
-          if (_docsDirAbsolutePath.isEmpty || _templates.isEmpty) return [];
-          return _templates.map(
+  List<TemplateFull> get templatesThumbnails =>
+      composeConverter2<Directory, List<Template>, List<TemplateFull>>(
+        futureA: getApplicationDocumentsDirectory(),
+        streamB: TemplatesRepository.getInstance().observeItems(),
+        getValue: (docsDir, templates) {
+          return templates.map(
             (template) {
               final fullImagePath = path.join(
-                _docsDirAbsolutePath,
+                docsDir.absolute.path,
                 SaveTemplateInteractor.templatesPathName,
                 template.imageUrl,
               );
@@ -63,31 +60,22 @@ class MainPageStore extends RStore {
             },
           ).toList();
         },
+        initialValue: const [],
+        keyName: 'templatesThumbnails',
       );
 
-  void initStore() {
-    listenFuture<Directory>(
-      getApplicationDocumentsDirectory(),
-      id: 0,
-      onData: (docsDir) => setStore(
-        () => _docsDirAbsolutePath = docsDir.absolute.path,
-      ),
-    );
-    listenStream<List<Meme>>(
-      MemesRepository.getInstance().observeItems(),
-      id: 1,
-      onData: (memes) => setStore(
-        () => _memes = [...memes],
-      ),
-    );
-    listenStream<List<Template>>(
-      TemplatesRepository.getInstance().observeItems(),
-      id: 2,
-      onData: (templates) => setStore(
-        () => _templates = [...templates],
-      ),
-    );
-  }
+  String get _docsDirAbsolutePath => composeConverter<Directory, String>(
+        future: getApplicationDocumentsDirectory(),
+        initialValue: '',
+        getValue: (docsDir) => docsDir.absolute.path,
+        keyName: '_docsDirAbsolutePath',
+      );
+
+  List<Meme> get _memes => composeStream<List<Meme>>(
+        stream: MemesRepository.getInstance().observeItems(),
+        initialData: const [],
+        keyName: '_memes',
+      );
 
   void addMeme() => _pickMemeImage(true);
 
@@ -96,7 +84,6 @@ class MainPageStore extends RStore {
   void _pickMemeImage(bool savePath) {
     listenFuture<String?>(
       PickImageInteractor.getInstance().pickImage(),
-      id: 3,
       onData: (imagePath) {
         if (imagePath != null) {
           SaveTemplateInteractor.getInstance().saveTemplate(
@@ -111,16 +98,6 @@ class MainPageStore extends RStore {
         }
       },
     );
-  }
-
-  Future<String?> selectMeme() async {
-    final imagePath = await PickImageInteractor.getInstance().pickImage();
-    if (imagePath != null) {
-      await SaveTemplateInteractor.getInstance().saveTemplate(
-        imagePath: imagePath,
-      );
-    }
-    return imagePath;
   }
 
   void deleteTemplate(final String templateId) {
@@ -150,7 +127,7 @@ class MainPage extends RStoreWidget<MainPageStore> {
   }
 
   @override
-  MainPageStore createRStore() => MainPageStore()..initStore();
+  MainPageStore createRStore() => MainPageStore();
 }
 
 class MainPageContent extends StatefulWidget {
@@ -284,21 +261,19 @@ class CreateMemeFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = MainPageStore.of(context);
-    return RStoreValueBuilder<String>(
+    return RStoreStringListener<MainPageStore>(
       store: store,
-      watch: () => store.newMemeImagePath,
-      onChange: (context, imagePath) {
-        if (imagePath.isNotEmpty) {
-          store.setStore(() => store.newMemeImagePath = '');
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => CreateMemePage(
-                selectedMemePath: imagePath,
-              ),
+      watch: (store) => store.newMemeImagePath,
+      onNotEmpty: (context, imagePath) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CreateMemePage(
+              selectedMemePath: imagePath,
             ),
-          );
-        }
+          ),
+        );
       },
+      reset: (store) => store.newMemeImagePath = '',
       child: FloatingActionButton.extended(
         onPressed: () => store.addMeme(),
         backgroundColor: AppColors.fuchsia,
@@ -331,9 +306,9 @@ class CreatedMemesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RStoreContextValueBuilder<MainPageStore, List<MemeThumbnail>>(
+    return RStoreValueBuilder<MainPageStore, List<MemeThumbnail>>(
       watch: (store) => store.memesThumbnails,
-      builder: (context, memes, _) {
+      builder: (context, memes) {
         return GridView.extent(
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
@@ -441,9 +416,9 @@ class TemplatesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RStoreContextValueBuilder<MainPageStore, List<TemplateFull>>(
+    return RStoreValueBuilder<MainPageStore, List<TemplateFull>>(
       watch: (store) => store.templatesThumbnails,
-      builder: (context, templates, _) {
+      builder: (context, templates) {
         return GridView.extent(
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,

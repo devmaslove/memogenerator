@@ -753,9 +753,9 @@ class BackgroundImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RStoreContextValueBuilder<CreateMemePageStore, String>(
+    return RStoreValueBuilder<CreateMemePageStore, String>(
       watch: (store) => store.memePath,
-      builder: (context, path, _) {
+      builder: (context, path) {
         if (path.isEmpty) {
           return Container(
             color: Colors.white,
