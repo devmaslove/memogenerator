@@ -91,7 +91,7 @@ packages:
       name: built_value
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "8.4.1"
+    version: "8.4.2"
   characters:
     dependency: transitive
     description:
@@ -511,7 +511,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "9c0903ac9bcd957ebe1c5725e2b676fd4516471c"
+      resolved-ref: "11ac24a7afd181e70ff4ffd72a13080eb22ab16c"
       url: "https://github.com/dmitrymaslovhome/reactive_store"
     source: git
     version: "0.0.5"
@@ -556,7 +556,7 @@ packages:
       name: share_plus_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.2"
+    version: "3.2.0"
   share_plus_web:
     dependency: transitive
     description:

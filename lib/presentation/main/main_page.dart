@@ -21,7 +21,7 @@ import 'package:reactive_store/reactive_store.dart';
 class MainPageStore extends RStore {
   String newMemeImagePath = '';
 
-  List<MemeThumbnail> get memesThumbnails => compose<List<MemeThumbnail>>(
+  List<MemeThumbnail> get memesThumbnails => computed<List<MemeThumbnail>>(
         keyName: 'memesThumbnails',
         watch: () => [_docsDirAbsolutePath, _memes],
         getValue: () {
@@ -42,7 +42,7 @@ class MainPageStore extends RStore {
       );
 
   List<TemplateFull> get templatesThumbnails =>
-      composeConverter2<Directory, List<Template>, List<TemplateFull>>(
+      computedConverter2<Directory, List<Template>, List<TemplateFull>>(
         futureA: getApplicationDocumentsDirectory(),
         streamB: TemplatesRepository.getInstance().observeItems(),
         getValue: (docsDir, templates) {
@@ -64,14 +64,14 @@ class MainPageStore extends RStore {
         keyName: 'templatesThumbnails',
       );
 
-  String get _docsDirAbsolutePath => composeConverter<Directory, String>(
+  String get _docsDirAbsolutePath => computedConverter<Directory, String>(
         future: getApplicationDocumentsDirectory(),
         initialValue: '',
         getValue: (docsDir) => docsDir.absolute.path,
         keyName: '_docsDirAbsolutePath',
       );
 
-  List<Meme> get _memes => composeStream<List<Meme>>(
+  List<Meme> get _memes => computedFromStream<List<Meme>>(
         stream: MemesRepository.getInstance().observeItems(),
         initialData: const [],
         keyName: '_memes',
