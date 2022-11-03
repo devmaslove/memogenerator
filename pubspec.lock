@@ -506,15 +506,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.1"
-  reactive_store:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "11ac24a7afd181e70ff4ffd72a13080eb22ab16c"
-      url: "https://github.com/dmitrymaslovhome/reactive_store"
-    source: git
-    version: "0.0.5"
   rxdart:
     dependency: "direct main"
     description:
@@ -814,6 +805,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.1"
+  wstore:
+    dependency: "direct main"
+    description:
+      name: wstore
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
   xdg_directories:
     dependency: transitive
     description:

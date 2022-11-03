@@ -19,12 +19,12 @@ import 'package:memogenerator/presentation/create_meme/models/meme_text_with_sel
 import 'package:memogenerator/presentation/widgets/app_button.dart';
 import 'package:memogenerator/resources/app_colors.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:reactive_store/reactive_store.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wstore/wstore.dart';
 
-class CreateMemePageStore extends RStore {
+class CreateMemePageStore extends WStore {
   static const _subscribeIdLoadMemeFromRepository = 1;
   static const _subscribeShareMeme = 2;
 
@@ -319,11 +319,11 @@ class CreateMemePageStore extends RStore {
   CreateMemePage get widget => super.widget as CreateMemePage;
 
   static CreateMemePageStore of(BuildContext context) {
-    return RStoreWidget.store<CreateMemePageStore>(context);
+    return WStoreWidget.store<CreateMemePageStore>(context);
   }
 }
 
-class CreateMemePage extends RStoreWidget<CreateMemePageStore> {
+class CreateMemePage extends WStoreWidget<CreateMemePageStore> {
   final String? id;
   final String? selectedMemePath;
 
@@ -370,7 +370,7 @@ class CreateMemePage extends RStoreWidget<CreateMemePageStore> {
   }
 
   @override
-  CreateMemePageStore createRStore() => CreateMemePageStore(
+  CreateMemePageStore createWStore() => CreateMemePageStore(
         id: id,
         selectedMemePath: selectedMemePath,
       );
@@ -753,7 +753,7 @@ class BackgroundImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RStoreValueBuilder<CreateMemePageStore, String>(
+    return WStoreValueBuilder<CreateMemePageStore, String>(
       watch: (store) => store.memePath,
       builder: (context, path) {
         if (path.isEmpty) {

@@ -16,9 +16,9 @@ import 'package:memogenerator/presentation/widgets/app_button.dart';
 import 'package:memogenerator/resources/app_colors.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:reactive_store/reactive_store.dart';
+import 'package:wstore/wstore.dart';
 
-class MainPageStore extends RStore {
+class MainPageStore extends WStore {
   String newMemeImagePath = '';
 
   List<MemeThumbnail> get memesThumbnails => computed<List<MemeThumbnail>>(
@@ -112,11 +112,11 @@ class MainPageStore extends RStore {
   MainPage get widget => super.widget as MainPage;
 
   static MainPageStore of(BuildContext context) {
-    return RStoreWidget.store<MainPageStore>(context);
+    return WStoreWidget.store<MainPageStore>(context);
   }
 }
 
-class MainPage extends RStoreWidget<MainPageStore> {
+class MainPage extends WStoreWidget<MainPageStore> {
   const MainPage({
     super.key,
   });
@@ -127,7 +127,7 @@ class MainPage extends RStoreWidget<MainPageStore> {
   }
 
   @override
-  MainPageStore createRStore() => MainPageStore();
+  MainPageStore createWStore() => MainPageStore();
 }
 
 class MainPageContent extends StatefulWidget {
@@ -261,7 +261,7 @@ class CreateMemeFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = MainPageStore.of(context);
-    return RStoreStringListener<MainPageStore>(
+    return WStoreStringListener<MainPageStore>(
       store: store,
       watch: (store) => store.newMemeImagePath,
       onNotEmpty: (context, imagePath) {
@@ -306,7 +306,7 @@ class CreatedMemesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RStoreValueBuilder<MainPageStore, List<MemeThumbnail>>(
+    return WStoreValueBuilder<MainPageStore, List<MemeThumbnail>>(
       watch: (store) => store.memesThumbnails,
       builder: (context, memes) {
         return GridView.extent(
@@ -416,7 +416,7 @@ class TemplatesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RStoreValueBuilder<MainPageStore, List<TemplateFull>>(
+    return WStoreValueBuilder<MainPageStore, List<TemplateFull>>(
       watch: (store) => store.templatesThumbnails,
       builder: (context, templates) {
         return GridView.extent(
